@@ -1,13 +1,14 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import LoginView from '@/views/LoginView.vue'
+import PublicMapView from '@/views/PublicMapView.vue'
 import RegisterView from '@/views/RegisterView.vue'
 import ReportsView from '@/views/ReportsView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-    { path: '/', redirect: '/reports' },
+    { path: '/', name: 'map', component: PublicMapView },
     { path: '/login', name: 'login', component: LoginView, meta: { guestOnly: true } },
     { path: '/register', name: 'register', component: RegisterView, meta: { guestOnly: true } },
     {

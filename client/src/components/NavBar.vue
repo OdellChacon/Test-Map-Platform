@@ -16,6 +16,8 @@ async function handleLogout() {
     <RouterLink to="/" class="label-mono">Outage Map Platform</RouterLink>
 
     <nav class="navbar__links">
+      <RouterLink to="/">Live Map</RouterLink>
+
       <template v-if="authStore.isAuthenticated">
         <RouterLink to="/reports">My Reports</RouterLink>
         <button type="button" class="btn btn-secondary" @click="handleLogout">Log out</button>
