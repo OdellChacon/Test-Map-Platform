@@ -28,5 +28,12 @@ class AppServiceProvider extends ServiceProvider
                 config('outage.report_rate_limit.attempts'),
             )->by($request->user()?->id ?: $request->ip());
         });
+
+        RateLimiter::for('public', function (Request $request) {
+            return Limit::perMinutes(
+                config('outage.public_rate_limit.decay_minutes'),
+                config('outage.public_rate_limit.attempts'),
+            )->by($request->ip());
+        });
     }
 }

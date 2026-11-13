@@ -71,11 +71,12 @@ Indexes:
 | POST | `/api/v1/register` | none | Create account |
 | POST | `/api/v1/login` | none | Start session |
 | POST | `/api/v1/logout` | session | End session |
+| GET | `/api/v1/me` | session | Current authenticated user |
 | GET | `/api/v1/reports` | session | Paginated list of the caller's own reports |
 | POST | `/api/v1/reports` | session | Create a report |
 | PATCH | `/api/v1/reports/{report}` | session, owner | Edit radius, duration or description of an active report |
 | POST | `/api/v1/reports/{report}/close` | session, owner | Close an active report manually |
-| GET | `/api/v1/public/outages` | none | Active outages inside a bounding box, no personal data |
+| GET | `/api/v1/public/reports` | none | Active outages inside a bounding box, no personal data |
 
 Full request/response schemas are published as an OpenAPI document once the endpoints are implemented, not duplicated here.
 
@@ -96,6 +97,8 @@ Full request/response schemas are published as an OpenAPI document once the endp
 **Why:** The core query pattern is "find all active reports whose point falls inside this bounding box," which is exactly what spatial indexing exists for. Computing bounding-box membership with plain latitude/longitude range filters works but does not scale as well and does not extend cleanly if radius-based intersection queries are needed later (e.g., "does this new report overlap an existing one," relevant to ADR-4). PostGIS's `ST_MakeEnvelope` and `&&` operator push the filtering into the database and the index, instead of filtering in PHP.
 
 **Trade-off:** Adds an extension dependency to the database image and to any evaluator's local setup; mitigated by using the official `postgis/postgis` Docker image, so no manual extension installation is required.
+
+`location` is nullable at the schema level, not `NOT NULL`, because Eloquent's mass-assignment cannot express a PostGIS point literal in a single bound `INSERT`; every report is created through `OutageReport::createWithCoordinates()`, which inserts the row and immediately sets `location` inside the same database transaction, so a row is never readable with a null location in practice. The alternative (a single raw parameterized `INSERT ... RETURNING id` with the point expression inlined) was considered and rejected for this stage to keep report creation going through ordinary Eloquent `create()`, which the rest of the codebase (factories, tests) can reuse without duplicating raw SQL.
 
 ### ADR-3: Report expiration strategy
 

@@ -16,4 +16,11 @@ return [
         'decay_minutes' => (int) env('AUTH_RATE_LIMIT_DECAY_MINUTES', 1),
     ],
 
+    'public_rate_limit' => [
+        'attempts' => (int) env('OUTAGE_PUBLIC_RATE_LIMIT_ATTEMPTS', 60),
+        'decay_minutes' => (int) env('OUTAGE_PUBLIC_RATE_LIMIT_DECAY_MINUTES', 1),
+    ],
+
+    'max_bounding_box_span_degrees' => (float) env('OUTAGE_MAX_BOUNDING_BOX_SPAN_DEGREES', 10),
+
 ];
