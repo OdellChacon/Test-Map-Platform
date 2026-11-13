@@ -1,0 +1,123 @@
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_DATABASE}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    image: outage-map-api:local
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    volumes:
+      - ./api:/var/www/html
+      - api-vendor:/var/www/html/vendor
+    env_file:
+      - ./api/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(0);"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:1.27-alpine
+    volumes:
+      - ./api:/var/www/html
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "${API_PORT:-8000}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1/up"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  queue:
+    image: outage-map-api:local
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    command: php artisan queue:work --sleep=1 --tries=3
+    volumes:
+      - ./api:/var/www/html
+      - api-vendor:/var/www/html/vendor
+    env_file:
+      - ./api/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  scheduler:
+    image: outage-map-api:local
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    command: php artisan schedule:work
+    volumes:
+      - ./api:/var/www/html
+      - api-vendor:/var/www/html/vendor
+    env_file:
+      - ./api/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    volumes:
+      - ./client:/app
+      - client-node-modules:/app/node_modules
+    env_file:
+      - ./client/.env
+    ports:
+      - "${CLIENT_PORT:-5173}:5173"
+    depends_on:
+      - nginx
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  redis-data:
+  api-vendor:
+  client-node-modules:
