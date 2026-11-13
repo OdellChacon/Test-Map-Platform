@@ -1,0 +1,35 @@
+<?php
+
+namespace App\Http\Requests\Reports;
+
+use App\Enums\ReportDurationType;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
+
+class UpdateOutageReportRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    public function rules(): array
+    {
+        return [
+            'radius_km' => ['sometimes', 'numeric', 'between:0.5,25'],
+            'duration_hours' => ['sometimes', 'integer', 'between:1,'.config('outage.max_report_duration_hours')],
+            'description' => ['sometimes', 'nullable', 'string', 'max:500'],
+        ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator) {
+            $report = $this->route('report');
+
+            if ($this->has('duration_hours') && $report->duration_type !== ReportDurationType::Fixed) {
+                $validator->errors()->add('duration_hours', 'Duration hours can only be changed on a fixed-duration report.');
+            }
+        });
+    }
+}

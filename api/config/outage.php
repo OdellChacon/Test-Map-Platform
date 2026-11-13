@@ -1,0 +1,19 @@
+<?php
+
+return [
+
+    'max_report_duration_hours' => (int) env('OUTAGE_MAX_REPORT_DURATION_HOURS', 72),
+
+    'max_active_reports_per_user' => (int) env('OUTAGE_MAX_ACTIVE_REPORTS_PER_USER', 3),
+
+    'report_rate_limit' => [
+        'attempts' => (int) env('OUTAGE_REPORT_RATE_LIMIT_ATTEMPTS', 5),
+        'decay_minutes' => (int) env('OUTAGE_REPORT_RATE_LIMIT_DECAY_MINUTES', 60),
+    ],
+
+    'auth_rate_limit' => [
+        'attempts' => (int) env('AUTH_RATE_LIMIT_ATTEMPTS', 5),
+        'decay_minutes' => (int) env('AUTH_RATE_LIMIT_DECAY_MINUTES', 1),
+    ],
+
+];
