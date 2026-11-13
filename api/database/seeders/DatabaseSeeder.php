@@ -2,24 +2,26 @@
 
 namespace Database\Seeders;
 
+use App\Models\OutageReport;
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        $demoUser = User::factory()->create([
+            'name' => 'Demo User',
+            'email' => 'demo@outagemap.test',
         ]);
+
+        OutageReport::factory()->count(3)->for($demoUser)->create();
+
+        User::factory()->count(10)->create()->each(function (User $user) {
+            OutageReport::factory()
+                ->count(fake()->numberBetween(1, 3))
+                ->for($user)
+                ->create();
+        });
     }
 }
