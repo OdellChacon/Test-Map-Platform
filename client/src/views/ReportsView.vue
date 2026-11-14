@@ -26,6 +26,7 @@ const editingReportId = ref(null)
 const editForm = reactive({ radius_km: 0, duration_hours: null, description: '' })
 const editErrors = ref({})
 const isSavingEdit = ref(false)
+const closeErrors = reactive({})
 
 async function loadReports() {
   isLoadingList.value = true
@@ -90,7 +91,9 @@ async function handleCreate() {
     createForm.description = ''
     await loadReports()
   } catch (error) {
-    createErrors.value = error.response?.data?.errors ?? {}
+    createErrors.value = error.response?.data?.errors ?? {
+      reports: [error.response?.data?.message ?? 'Could not submit the report. Please try again in a moment.'],
+    }
   } finally {
     isCreating.value = false
   }
@@ -126,15 +129,23 @@ async function saveEdit(report) {
     editingReportId.value = null
     await loadReports()
   } catch (error) {
-    editErrors.value = error.response?.data?.errors ?? {}
+    editErrors.value = error.response?.data?.errors ?? {
+      report: [error.response?.data?.message ?? 'Could not save changes. Please try again in a moment.'],
+    }
   } finally {
     isSavingEdit.value = false
   }
 }
 
 async function handleClose(report) {
-  await reportsService.closeReport(report.id)
-  await loadReports()
+  closeErrors[report.id] = ''
+
+  try {
+    await reportsService.closeReport(report.id)
+    await loadReports()
+  } catch (error) {
+    closeErrors[report.id] = error.response?.data?.message ?? 'Could not close this report. Please try again in a moment.'
+  }
 }
 
 function handleReportChanged({ action, id, report }) {
@@ -293,6 +304,8 @@ onMounted(loadReports)
             <p v-else-if="report.status === 'closed'">Closed {{ formatDateTime(report.closed_at) }}</p>
             <p v-else>Expired {{ formatDateTime(report.expires_at) }}</p>
             <p v-if="report.description">{{ report.description }}</p>
+
+            <span v-if="closeErrors[report.id]" class="field-error">{{ closeErrors[report.id] }}</span>
 
             <div v-if="report.status === 'active'" style="display: flex; gap: 0.5rem">
               <button type="button" class="btn btn-secondary" @click="startEdit(report)">
