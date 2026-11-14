@@ -4,16 +4,17 @@ namespace App\Models;
 
 use App\Enums\ReportDurationType;
 use App\Enums\ReportStatus;
+use App\Traits\HasGeographicLocation;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Facades\DB;
 
 class OutageReport extends Model
 {
     use HasFactory;
+    use HasGeographicLocation;
 
     protected $fillable = [
         'user_id',
@@ -46,15 +47,6 @@ class OutageReport extends Model
         return $this->hasMany(OutageReportConfirmation::class);
     }
 
-    public function scopeWithCoordinates(Builder $query): Builder
-    {
-        return $query->addSelect([
-            '*',
-            DB::raw('ST_Y(location::geometry) as latitude'),
-            DB::raw('ST_X(location::geometry) as longitude'),
-        ]);
-    }
-
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('status', ReportStatus::Active)
@@ -67,23 +59,5 @@ class OutageReport extends Model
             'location && ST_MakeEnvelope(?, ?, ?, ?, 4326)::geography',
             [$southWestLng, $southWestLat, $northEastLng, $northEastLat]
         );
-    }
-
-    public function setCoordinates(float $latitude, float $longitude): void
-    {
-        DB::statement(
-            'UPDATE outage_reports SET location = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
-            [$longitude, $latitude, $this->id]
-        );
-    }
-
-    public static function createWithCoordinates(array $attributes, float $latitude, float $longitude): self
-    {
-        return DB::transaction(function () use ($attributes, $latitude, $longitude) {
-            $report = static::query()->create($attributes);
-            $report->setCoordinates($latitude, $longitude);
-
-            return $report->refresh();
-        });
     }
 }
