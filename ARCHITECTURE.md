@@ -146,6 +146,6 @@ Full request/response schemas are published as an OpenAPI 3.0 document at `api/o
 At the scale described in the brief (100,000 active users during a city-wide blackout), the parts of this design that would need to change first:
 
 - The public outages endpoint would move from polling to a push model (bonus B1, WebSockets via Laravel Reverb), since polling from 100,000 clients multiplies read load linearly with client count regardless of how cheap each individual query is.
-- Redis and the database would need to be split from single-container services into managed, replicated services; the current docker-compose topology is explicitly a development/evaluation setup, not a production topology.
+- Redis and the database would need to be split from single-container services into managed, replicated services; the current docker-compose topology is explicitly a development/evaluation setup, not a production topology. For that reason the API image installs with dev dependencies included (Pest, Pint, Faker), so `./vendor/bin/pest`, `./vendor/bin/pint` and `db:seed` work immediately after `docker compose up --build` with no extra step; a production image would split this into a build stage that runs `composer install --no-dev`.
 - The bounding-box query, already indexed, would benefit from a read-replica for public (unauthenticated) traffic, isolating it from the write path used by report creation.
 - Rate limiting and session storage already live in Redis, so horizontally scaling the PHP-FPM tier behind the load balancer requires no state migration.
