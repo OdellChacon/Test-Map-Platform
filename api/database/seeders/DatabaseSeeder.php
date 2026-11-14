@@ -16,6 +16,12 @@ class DatabaseSeeder extends Seeder
             'email' => 'demo@outagemap.test',
         ]);
 
+        User::factory()->create([
+            'name' => 'Demo Moderator',
+            'email' => 'moderator@outagemap.test',
+            'is_moderator' => true,
+        ]);
+
         $demoReports = OutageReport::factory()->count(3)->for($demoUser)->create();
 
         $otherUsers = User::factory()->count(10)->create()->each(function (User $user) {

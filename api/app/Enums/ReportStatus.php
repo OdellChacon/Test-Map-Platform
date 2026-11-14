@@ -7,4 +7,5 @@ enum ReportStatus: string
     case Active = 'active';
     case Closed = 'closed';
     case Expired = 'expired';
+    case Hidden = 'hidden';
 }

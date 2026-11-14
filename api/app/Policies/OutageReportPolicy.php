@@ -21,4 +21,9 @@ class OutageReportPolicy
     {
         return $user->id !== $report->user_id;
     }
+
+    public function moderate(User $user, OutageReport $report): bool
+    {
+        return (bool) $user->is_moderator;
+    }
 }
