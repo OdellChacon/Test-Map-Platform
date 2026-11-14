@@ -1,6 +1,7 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import NotificationsBell from '@/components/NotificationsBell.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -17,9 +18,13 @@ async function handleLogout() {
 
     <nav class="navbar__links">
       <RouterLink to="/">Live Map</RouterLink>
+      <RouterLink to="/history">History</RouterLink>
 
       <template v-if="authStore.isAuthenticated">
         <RouterLink to="/reports">My Reports</RouterLink>
+        <RouterLink to="/subscriptions">Subscriptions</RouterLink>
+        <RouterLink v-if="authStore.user?.is_moderator" to="/moderation">Moderation</RouterLink>
+        <NotificationsBell />
         <button type="button" class="btn btn-secondary" @click="handleLogout">Log out</button>
       </template>
       <template v-else>
