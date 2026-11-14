@@ -28,6 +28,7 @@ class OutageReportFactory extends Factory
             'expires_at' => $expiresAt,
             'status' => ReportStatus::Active,
             'description' => fake()->optional()->sentence(),
+            'address' => fake()->optional(0.8)->address(),
         ];
     }
 

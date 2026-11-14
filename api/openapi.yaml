@@ -1,7 +1,13 @@
 openapi: 3.0.3
 info:
   title: Outage Map Platform API
-  description: Power outage reporting platform with a live public map.
+  description: >-
+    Power outage reporting platform with a live public map. In addition to
+    the REST endpoints below, the server broadcasts a `report.changed` event
+    (payload: `{ action: "created"|"updated"|"removed", id, report }`) over a
+    public Reverb WebSocket channel named `outages` whenever a report is
+    created, edited, closed, confirmed, or expires. This is a plain Pusher
+    protocol channel (no OpenAPI equivalent), connected to with Laravel Echo.
   version: 1.0.0
 servers:
   - url: http://localhost:8000
@@ -192,6 +198,38 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorMessage'
+
+  /api/v1/reports/{report}/confirm:
+    post:
+      tags: [Reports]
+      summary: Confirm an active report someone else created
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+      responses:
+        '200':
+          description: Confirmed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfirmationResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          description: You cannot confirm your own report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '422':
+          description: The report is not active, or you already confirmed it
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
 
   /api/v1/public/reports:
     get:
@@ -389,6 +427,12 @@ components:
         description:
           type: string
           nullable: true
+        address:
+          type: string
+          nullable: true
+          description: Resolved asynchronously after creation; null until the reverse-geocoding job completes.
+        confirmations_count:
+          type: integer
         expires_at:
           type: string
           format: date-time
@@ -443,9 +487,23 @@ components:
         radius_km:
           type: number
           format: float
+        address:
+          type: string
+          nullable: true
+        confirmations_count:
+          type: integer
         expires_at:
           type: string
           format: date-time
+
+    ConfirmationResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            confirmations_count:
+              type: integer
 
     PublicOutageReportCollectionResponse:
       type: object

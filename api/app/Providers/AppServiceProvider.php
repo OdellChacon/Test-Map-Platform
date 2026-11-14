@@ -33,5 +33,12 @@ class AppServiceProvider extends ServiceProvider
                 config('outage.public_rate_limit.attempts'),
             )->by($request->ip());
         });
+
+        RateLimiter::for('confirmations', function (Request $request) {
+            return Limit::perMinutes(
+                config('outage.confirmation_rate_limit.decay_minutes'),
+                config('outage.confirmation_rate_limit.attempts'),
+            )->by($request->user()?->id ?: $request->ip());
+        });
     }
 }

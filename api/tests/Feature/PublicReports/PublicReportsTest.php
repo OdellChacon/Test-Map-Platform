@@ -53,8 +53,9 @@ test('the public resource exposes no personal data', function () {
     $response = $this->getJson('/api/v1/public/reports?'.http_build_query(madridBoundingBox()))
         ->assertOk();
 
-    expect($response->json('data.0'))->toHaveKeys(['id', 'latitude', 'longitude', 'radius_km', 'expires_at'])
-        ->and($response->json('data.0'))->not->toHaveKeys(['user_id', 'description', 'user']);
+    expect($response->json('data.0'))->toHaveKeys([
+        'id', 'latitude', 'longitude', 'radius_km', 'address', 'confirmations_count', 'expires_at',
+    ])->and($response->json('data.0'))->not->toHaveKeys(['user_id', 'description', 'user']);
 });
 
 test('it validates the bounding box parameters', function () {

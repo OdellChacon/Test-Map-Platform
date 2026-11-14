@@ -23,4 +23,9 @@ return [
 
     'max_bounding_box_span_degrees' => (float) env('OUTAGE_MAX_BOUNDING_BOX_SPAN_DEGREES', 10),
 
+    'confirmation_rate_limit' => [
+        'attempts' => (int) env('OUTAGE_CONFIRMATION_RATE_LIMIT_ATTEMPTS', 20),
+        'decay_minutes' => (int) env('OUTAGE_CONFIRMATION_RATE_LIMIT_DECAY_MINUTES', 60),
+    ],
+
 ];

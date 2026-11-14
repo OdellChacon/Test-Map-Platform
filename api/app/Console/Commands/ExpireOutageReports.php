@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Enums\ReportStatus;
+use App\Events\PublicOutageReportChanged;
 use App\Models\OutageReport;
 use Illuminate\Console\Command;
 
@@ -14,12 +15,20 @@ class ExpireOutageReports extends Command
 
     public function handle(): int
     {
-        $expired = OutageReport::query()
+        $expiredIds = OutageReport::query()
             ->where('status', ReportStatus::Active)
             ->where('expires_at', '<=', now())
+            ->pluck('id');
+
+        OutageReport::query()
+            ->whereIn('id', $expiredIds)
             ->update(['status' => ReportStatus::Expired]);
 
-        $this->info("Expired {$expired} outage reports.");
+        foreach ($expiredIds as $id) {
+            PublicOutageReportChanged::dispatch('removed', $id);
+        }
+
+        $this->info("Expired {$expiredIds->count()} outage reports.");
 
         return self::SUCCESS;
     }

@@ -18,5 +18,6 @@ Route::prefix('v1')->group(function () {
         Route::post('reports', [ReportController::class, 'store'])->middleware('throttle:reports');
         Route::patch('reports/{report}', [ReportController::class, 'update']);
         Route::post('reports/{report}/close', [ReportController::class, 'close']);
+        Route::post('reports/{report}/confirm', [ReportController::class, 'confirm'])->middleware('throttle:confirmations');
     });
 });

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\DB;
 
 class OutageReport extends Model
@@ -23,6 +24,7 @@ class OutageReport extends Model
         'closed_at',
         'status',
         'description',
+        'address',
     ];
 
     protected $casts = [
@@ -37,6 +39,11 @@ class OutageReport extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function confirmations(): HasMany
+    {
+        return $this->hasMany(OutageReportConfirmation::class);
     }
 
     public function scopeWithCoordinates(Builder $query): Builder

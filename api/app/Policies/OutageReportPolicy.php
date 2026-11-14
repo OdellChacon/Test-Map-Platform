@@ -16,4 +16,9 @@ class OutageReportPolicy
     {
         return $user->id === $report->user_id;
     }
+
+    public function confirm(User $user, OutageReport $report): bool
+    {
+        return $user->id !== $report->user_id;
+    }
 }

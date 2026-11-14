@@ -18,6 +18,8 @@ class OutageReportResource extends JsonResource
             'duration_hours' => $this->duration_hours,
             'status' => $this->status->value,
             'description' => $this->description,
+            'address' => $this->address,
+            'confirmations_count' => $this->confirmations_count ?? $this->confirmations()->count(),
             'expires_at' => $this->expires_at->toIso8601String(),
             'closed_at' => $this->closed_at?->toIso8601String(),
             'created_at' => $this->created_at->toIso8601String(),

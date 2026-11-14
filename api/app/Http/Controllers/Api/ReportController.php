@@ -4,11 +4,14 @@ namespace App\Http\Controllers\Api;
 
 use App\Enums\ReportDurationType;
 use App\Enums\ReportStatus;
+use App\Events\PublicOutageReportChanged;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Reports\StoreOutageReportRequest;
 use App\Http\Requests\Reports\UpdateOutageReportRequest;
 use App\Http\Resources\OutageReportResource;
+use App\Jobs\ResolveOutageReportAddress;
 use App\Models\OutageReport;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -20,6 +23,7 @@ class ReportController extends Controller
         $reports = $request->user()
             ->outageReports()
             ->withCoordinates()
+            ->withCount('confirmations')
             ->latest()
             ->paginate(15);
 
@@ -37,16 +41,30 @@ class ReportController extends Controller
                 ? $durationHours
                 : config('outage.max_report_duration_hours')
         );
+        $latitude = $request->validated('latitude');
+        $longitude = $request->validated('longitude');
+        $radiusKm = $request->validated('radius_km');
 
         $report = OutageReport::createWithCoordinates([
             'user_id' => $request->user()->id,
-            'radius_km' => $request->validated('radius_km'),
+            'radius_km' => $radiusKm,
             'duration_type' => $durationType,
             'duration_hours' => $durationHours,
             'expires_at' => $expiresAt,
             'status' => ReportStatus::Active,
             'description' => $request->validated('description'),
-        ], $request->validated('latitude'), $request->validated('longitude'));
+        ], $latitude, $longitude);
+
+        ResolveOutageReportAddress::dispatch($report->id, $latitude, $longitude);
+
+        PublicOutageReportChanged::dispatch('created', $report->id, [
+            'latitude' => $latitude,
+            'longitude' => $longitude,
+            'radius_km' => (float) $radiusKm,
+            'address' => null,
+            'expires_at' => $expiresAt->toIso8601String(),
+            'confirmations_count' => 0,
+        ]);
 
         return (new OutageReportResource(
             OutageReport::query()->withCoordinates()->findOrFail($report->id)
@@ -69,9 +87,18 @@ class ReportController extends Controller
 
         $report->fill($attributes)->save();
 
-        return new OutageReportResource(
-            OutageReport::query()->withCoordinates()->findOrFail($report->id)
-        );
+        $report = OutageReport::query()->withCoordinates()->findOrFail($report->id);
+
+        PublicOutageReportChanged::dispatch('updated', $report->id, [
+            'latitude' => $report->latitude,
+            'longitude' => $report->longitude,
+            'radius_km' => (float) $report->radius_km,
+            'address' => $report->address,
+            'expires_at' => $report->expires_at->toIso8601String(),
+            'confirmations_count' => $report->confirmations()->count(),
+        ]);
+
+        return new OutageReportResource($report);
     }
 
     public function close(OutageReport $report): OutageReportResource
@@ -87,8 +114,43 @@ class ReportController extends Controller
             'closed_at' => now(),
         ]);
 
+        PublicOutageReportChanged::dispatch('removed', $report->id);
+
         return new OutageReportResource(
             OutageReport::query()->withCoordinates()->findOrFail($report->id)
         );
+    }
+
+    public function confirm(Request $request, OutageReport $report): JsonResponse
+    {
+        $this->authorize('confirm', $report);
+
+        if ($report->status !== ReportStatus::Active) {
+            abort(422, 'Only active reports can be confirmed.');
+        }
+
+        try {
+            $report->confirmations()->create(['user_id' => $request->user()->id]);
+        } catch (QueryException $exception) {
+            if ($exception->getCode() !== '23505') {
+                throw $exception;
+            }
+
+            abort(422, 'You have already confirmed this report.');
+        }
+
+        $confirmationsCount = $report->confirmations()->count();
+        $report = OutageReport::query()->withCoordinates()->findOrFail($report->id);
+
+        PublicOutageReportChanged::dispatch('updated', $report->id, [
+            'latitude' => $report->latitude,
+            'longitude' => $report->longitude,
+            'radius_km' => (float) $report->radius_km,
+            'address' => $report->address,
+            'expires_at' => $report->expires_at->toIso8601String(),
+            'confirmations_count' => $confirmationsCount,
+        ]);
+
+        return response()->json(['data' => ['confirmations_count' => $confirmationsCount]]);
     }
 }

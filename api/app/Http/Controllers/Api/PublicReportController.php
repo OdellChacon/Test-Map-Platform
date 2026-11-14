@@ -15,6 +15,7 @@ class PublicReportController extends Controller
         $reports = OutageReport::query()
             ->active()
             ->withCoordinates()
+            ->withCount('confirmations')
             ->withinBoundingBox(
                 $request->validated('south_west_lat'),
                 $request->validated('south_west_lng'),
