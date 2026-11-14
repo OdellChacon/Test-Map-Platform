@@ -78,7 +78,7 @@ Indexes:
 | POST | `/api/v1/reports/{report}/close` | session, owner | Close an active report manually |
 | GET | `/api/v1/public/reports` | none | Active outages inside a bounding box, no personal data |
 
-Full request/response schemas are published as an OpenAPI document once the endpoints are implemented, not duplicated here.
+Full request/response schemas are published as an OpenAPI 3.0 document at `api/openapi.yaml`, not duplicated here.
 
 ## 4. Architecture Decision Records
 

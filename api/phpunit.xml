@@ -5,9 +5,6 @@
          colors="true"
 >
     <testsuites>
-        <testsuite name="Unit">
-            <directory>tests/Unit</directory>
-        </testsuite>
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
         </testsuite>
@@ -18,19 +15,61 @@
         </include>
     </source>
     <php>
-        <env name="APP_ENV" value="testing"/>
-        <env name="APP_MAINTENANCE_DRIVER" value="file"/>
-        <env name="BCRYPT_ROUNDS" value="4"/>
-        <env name="BROADCAST_CONNECTION" value="null"/>
-        <env name="CACHE_STORE" value="array"/>
-        <env name="DB_CONNECTION" value="sqlite"/>
-        <env name="DB_DATABASE" value=":memory:"/>
-        <env name="DB_URL" value=""/>
-        <env name="MAIL_MAILER" value="array"/>
-        <env name="QUEUE_CONNECTION" value="sync"/>
-        <env name="SESSION_DRIVER" value="array"/>
-        <env name="PULSE_ENABLED" value="false"/>
-        <env name="TELESCOPE_ENABLED" value="false"/>
-        <env name="NIGHTWATCH_ENABLED" value="false"/>
+        <env name="APP_ENV" value="testing" force="true"/>
+        <env name="APP_MAINTENANCE_DRIVER" value="file" force="true"/>
+        <env name="BCRYPT_ROUNDS" value="4" force="true"/>
+        <env name="BROADCAST_CONNECTION" value="null" force="true"/>
+        <env name="CACHE_STORE" value="array" force="true"/>
+        <env name="DB_CONNECTION" value="pgsql" force="true"/>
+        <env name="DB_HOST" value="postgres" force="true"/>
+        <env name="DB_PORT" value="5432" force="true"/>
+        <env name="DB_DATABASE" value="outage_map_test" force="true"/>
+        <env name="DB_USERNAME" value="outage_map" force="true"/>
+        <env name="DB_PASSWORD" value="secret" force="true"/>
+        <env name="DB_URL" value="" force="true"/>
+        <env name="MAIL_MAILER" value="array" force="true"/>
+        <env name="QUEUE_CONNECTION" value="sync" force="true"/>
+        <env name="SESSION_DRIVER" value="array" force="true"/>
+        <env name="SANCTUM_STATEFUL_DOMAINS" value="localhost" force="true"/>
+        <env name="OUTAGE_MAX_REPORT_DURATION_HOURS" value="72" force="true"/>
+        <env name="OUTAGE_MAX_ACTIVE_REPORTS_PER_USER" value="3" force="true"/>
+        <env name="OUTAGE_REPORT_RATE_LIMIT_ATTEMPTS" value="5" force="true"/>
+        <env name="OUTAGE_REPORT_RATE_LIMIT_DECAY_MINUTES" value="60" force="true"/>
+        <env name="AUTH_RATE_LIMIT_ATTEMPTS" value="5" force="true"/>
+        <env name="AUTH_RATE_LIMIT_DECAY_MINUTES" value="1" force="true"/>
+        <env name="OUTAGE_PUBLIC_RATE_LIMIT_ATTEMPTS" value="60" force="true"/>
+        <env name="OUTAGE_PUBLIC_RATE_LIMIT_DECAY_MINUTES" value="1" force="true"/>
+        <env name="OUTAGE_MAX_BOUNDING_BOX_SPAN_DEGREES" value="10" force="true"/>
+        <env name="PULSE_ENABLED" value="false" force="true"/>
+        <env name="TELESCOPE_ENABLED" value="false" force="true"/>
+        <env name="NIGHTWATCH_ENABLED" value="false" force="true"/>
+        <server name="APP_ENV" value="testing" force="true"/>
+        <server name="APP_MAINTENANCE_DRIVER" value="file" force="true"/>
+        <server name="BCRYPT_ROUNDS" value="4" force="true"/>
+        <server name="BROADCAST_CONNECTION" value="null" force="true"/>
+        <server name="CACHE_STORE" value="array" force="true"/>
+        <server name="DB_CONNECTION" value="pgsql" force="true"/>
+        <server name="DB_HOST" value="postgres" force="true"/>
+        <server name="DB_PORT" value="5432" force="true"/>
+        <server name="DB_DATABASE" value="outage_map_test" force="true"/>
+        <server name="DB_USERNAME" value="outage_map" force="true"/>
+        <server name="DB_PASSWORD" value="secret" force="true"/>
+        <server name="DB_URL" value="" force="true"/>
+        <server name="MAIL_MAILER" value="array" force="true"/>
+        <server name="QUEUE_CONNECTION" value="sync" force="true"/>
+        <server name="SESSION_DRIVER" value="array" force="true"/>
+        <server name="SANCTUM_STATEFUL_DOMAINS" value="localhost" force="true"/>
+        <server name="OUTAGE_MAX_REPORT_DURATION_HOURS" value="72" force="true"/>
+        <server name="OUTAGE_MAX_ACTIVE_REPORTS_PER_USER" value="3" force="true"/>
+        <server name="OUTAGE_REPORT_RATE_LIMIT_ATTEMPTS" value="5" force="true"/>
+        <server name="OUTAGE_REPORT_RATE_LIMIT_DECAY_MINUTES" value="60" force="true"/>
+        <server name="AUTH_RATE_LIMIT_ATTEMPTS" value="5" force="true"/>
+        <server name="AUTH_RATE_LIMIT_DECAY_MINUTES" value="1" force="true"/>
+        <server name="OUTAGE_PUBLIC_RATE_LIMIT_ATTEMPTS" value="60" force="true"/>
+        <server name="OUTAGE_PUBLIC_RATE_LIMIT_DECAY_MINUTES" value="1" force="true"/>
+        <server name="OUTAGE_MAX_BOUNDING_BOX_SPAN_DEGREES" value="10" force="true"/>
+        <server name="PULSE_ENABLED" value="false" force="true"/>
+        <server name="TELESCOPE_ENABLED" value="false" force="true"/>
+        <server name="NIGHTWATCH_ENABLED" value="false" force="true"/>
     </php>
 </phpunit>

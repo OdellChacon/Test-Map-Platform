@@ -23,6 +23,7 @@ class StoreOutageReportRequest extends FormRequest
             'duration_type' => ['required', Rule::enum(ReportDurationType::class)],
             'duration_hours' => [
                 Rule::requiredIf($this->input('duration_type') === ReportDurationType::Fixed->value),
+                'nullable',
                 'integer',
                 'between:1,'.config('outage.max_report_duration_hours'),
             ],
