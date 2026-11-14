@@ -41,6 +41,7 @@ class ResolveOutageReportAddress implements ShouldQueue
             'latitude' => $this->latitude,
             'longitude' => $this->longitude,
             'radius_km' => (float) $report->radius_km,
+            'duration_type' => $report->duration_type->value,
             'expires_at' => $report->expires_at->toIso8601String(),
             'created_at' => $report->created_at->toIso8601String(),
             'address' => $address,
