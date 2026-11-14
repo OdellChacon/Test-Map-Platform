@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import MapAdapter from '@/components/MapAdapter.vue'
 import * as reportsService from '@/services/reports'
 import { useOutageChannel } from '@/composables/useOutageChannel'
@@ -7,7 +7,9 @@ import { formatDateTime, formatRemainingTime } from '@/utils/time'
 
 const reports = ref([])
 const isLoadingList = ref(false)
+const isLoadingMore = ref(false)
 const listError = ref('')
+const pagination = ref(null)
 
 const createForm = reactive({
   latitude: 40.4168,
@@ -32,10 +34,33 @@ async function loadReports() {
   try {
     const response = await reportsService.fetchMyReports()
     reports.value = response.data
+    pagination.value = response.meta
   } catch {
     listError.value = 'Could not load your reports. Try again in a moment.'
   } finally {
     isLoadingList.value = false
+  }
+}
+
+const hasMoreReports = computed(
+  () => pagination.value && pagination.value.current_page < pagination.value.last_page,
+)
+
+async function loadMoreReports() {
+  if (!hasMoreReports.value) {
+    return
+  }
+
+  isLoadingMore.value = true
+
+  try {
+    const response = await reportsService.fetchMyReports(pagination.value.current_page + 1)
+    reports.value = [...reports.value, ...response.data]
+    pagination.value = response.meta
+  } catch {
+    listError.value = 'Could not load more reports. Try again in a moment.'
+  } finally {
+    isLoadingMore.value = false
   }
 }
 
@@ -279,6 +304,16 @@ onMounted(loadReports)
             </div>
           </template>
         </div>
+
+        <button
+          v-if="hasMoreReports"
+          type="button"
+          class="btn btn-secondary"
+          :disabled="isLoadingMore"
+          @click="loadMoreReports"
+        >
+          {{ isLoadingMore ? 'Loading...' : 'Load more' }}
+        </button>
       </div>
     </section>
   </div>
