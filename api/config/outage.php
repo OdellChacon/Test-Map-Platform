@@ -28,4 +28,9 @@ return [
         'decay_minutes' => (int) env('OUTAGE_CONFIRMATION_RATE_LIMIT_DECAY_MINUTES', 60),
     ],
 
+    'report_mutation_rate_limit' => [
+        'attempts' => (int) env('OUTAGE_REPORT_MUTATION_RATE_LIMIT_ATTEMPTS', 30),
+        'decay_minutes' => (int) env('OUTAGE_REPORT_MUTATION_RATE_LIMIT_DECAY_MINUTES', 1),
+    ],
+
 ];

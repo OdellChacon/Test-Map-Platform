@@ -21,8 +21,8 @@ Route::prefix('v1')->group(function () {
 
         Route::get('reports', [ReportController::class, 'index']);
         Route::post('reports', [ReportController::class, 'store'])->middleware('throttle:reports');
-        Route::patch('reports/{report}', [ReportController::class, 'update']);
-        Route::post('reports/{report}/close', [ReportController::class, 'close']);
+        Route::patch('reports/{report}', [ReportController::class, 'update'])->middleware('throttle:report-mutations');
+        Route::post('reports/{report}/close', [ReportController::class, 'close'])->middleware('throttle:report-mutations');
         Route::post('reports/{report}/confirm', [ReportController::class, 'confirm'])->middleware('throttle:confirmations');
 
         Route::get('subscriptions', [SubscriptionController::class, 'index']);
