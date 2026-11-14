@@ -25,7 +25,7 @@ describe('auth store', () => {
 
     expect(store.isAuthenticated).toBe(true)
     expect(store.user.email).toBe('demo@outagemap.test')
-  });
+  })
 
   it('clears the user after logout', async () => {
     authService.login.mockResolvedValue({ id: 1, name: 'Demo', email: 'demo@outagemap.test' })
