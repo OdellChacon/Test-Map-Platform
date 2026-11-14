@@ -12,6 +12,8 @@ A power outage reporting platform with a live public map. Users report an outage
 | Database | PostgreSQL 16 with PostGIS |
 | Cache / queues | Redis |
 | Map | OpenStreetMap tiles via Leaflet |
+| Real-time updates | Laravel Reverb (WebSocket), Laravel Echo |
+| Reverse geocoding | Nominatim (OpenStreetMap) |
 | Containers | Docker Compose |
 
 Full justification for each choice is in [ARCHITECTURE.md](ARCHITECTURE.md). The milestone plan is in [PLAN.md](PLAN.md).
@@ -82,6 +84,7 @@ docker-compose.yml
 |---|---|---|
 | `client` | 5173 | Vite dev server (SPA) |
 | `nginx` | 8000 | Reverse proxy in front of the API |
+| `reverb` | 8081 | WebSocket server for the live public map |
 | `api`, `queue`, `scheduler` | — | Same Laravel image, three entrypoints (php-fpm, `queue:work`, `schedule:work`) |
 | `postgres`, `redis` | — | Internal only, not published to the host |
 
@@ -93,6 +96,14 @@ docker compose down -v
 
 Removes containers and named volumes (database and node_modules/vendor caches), for a true from-scratch run of the quick start above.
 
+## Bonus features implemented
+
+Beyond the mandatory scope (see [PLAN.md](PLAN.md) §4 and §10 of the brief):
+
+- **Live updates over WebSockets** — the public map and "My reports" both subscribe to a public Reverb channel (`outages`) and update in real time (new report, closed, confirmed, address resolved), falling back to a 2-minute poll if a WebSocket message is ever missed. See ADR-7 in [ARCHITECTURE.md](ARCHITECTURE.md).
+- **Community confirmation** — any authenticated user other than a report's owner can confirm it exists; the count is shown on the public map and on the owner's own list. See ADR-4 in [ARCHITECTURE.md](ARCHITECTURE.md).
+- **Reverse geocoding** — a queued job resolves a human-readable address for every report via Nominatim, shown wherever the report appears. See ADR-8 in [ARCHITECTURE.md](ARCHITECTURE.md).
+
 ## Known limitations
 
-Bonus features beyond the mandatory scope were not attempted; see ADR-4 and ADR-5 in [ARCHITECTURE.md](ARCHITECTURE.md) for the ones most directly affected (duplicate-report handling, reverse geocoding). The public map refreshes by polling every 30 seconds rather than over a WebSocket push, which is the first thing that would change at the scale discussed in the Scalability section of [ARCHITECTURE.md](ARCHITECTURE.md).
+The public map can still look visually noisy when many overlapping reports describe the same real-world outage (ADR-4); confirmation gives a corroboration signal but reports are never auto-merged.

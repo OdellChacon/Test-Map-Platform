@@ -102,6 +102,21 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  reverb:
+    image: outage-map-api:local
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    command: php artisan reverb:start --host=0.0.0.0 --port=8080
+    volumes:
+      - ./api:/var/www/html
+      - api-vendor:/var/www/html/vendor
+    env_file:
+      - ./api/.env
+    ports:
+      - "${REVERB_PORT:-8081}:8080"
+    restart: unless-stopped
+
   client:
     build:
       context: ./client
