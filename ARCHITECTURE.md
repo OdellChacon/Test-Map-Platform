@@ -42,6 +42,34 @@ erDiagram
         string name
         string email
         string password
+        boolean is_moderator
+        timestamp created_at
+        timestamp updated_at
+    }
+    OUTAGE_SUBSCRIPTIONS {
+        bigint id PK
+        bigint user_id FK
+        geography location
+        decimal radius_km
+        timestamp created_at
+        timestamp updated_at
+    }
+    REPORT_MODERATION_ACTIONS {
+        bigint id PK
+        bigint outage_report_id FK
+        bigint moderator_id FK
+        string action
+        string reason
+        timestamp created_at
+        timestamp updated_at
+    }
+    NOTIFICATIONS {
+        uuid id PK
+        string type
+        string notifiable_type
+        bigint notifiable_id
+        text data
+        timestamp read_at
         timestamp created_at
         timestamp updated_at
     }
@@ -70,6 +98,10 @@ erDiagram
     USERS ||--o{ OUTAGE_REPORTS : creates
     USERS ||--o{ OUTAGE_REPORT_CONFIRMATIONS : confirms
     OUTAGE_REPORTS ||--o{ OUTAGE_REPORT_CONFIRMATIONS : "confirmed by"
+    USERS ||--o{ OUTAGE_SUBSCRIPTIONS : follows
+    USERS ||--o{ REPORT_MODERATION_ACTIONS : "acts as moderator"
+    OUTAGE_REPORTS ||--o{ REPORT_MODERATION_ACTIONS : "moderated via"
+    USERS ||--o{ NOTIFICATIONS : receives
 ```
 
 Indexes:
@@ -77,6 +109,7 @@ Indexes:
 - `outage_reports.status`, `outage_reports.expires_at` — composite index, used by the expiration job and by every "active reports" query.
 - `outage_reports.user_id` — used by ownership checks and the "my reports" listing.
 - `outage_report_confirmations.(outage_report_id, user_id)` — unique index, the database (not application logic) is what makes a double confirmation impossible under concurrent requests.
+- `outage_subscriptions.location` — GiST index, same reasoning as `outage_reports.location`; used by `ST_DWithin` to find every subscription whose zone covers a newly created report.
 
 `address` is nullable and filled asynchronously by a queued job after creation (ADR-8); a report is always creatable and visible on the map even if the geocoding service is slow or unreachable.
 
@@ -96,6 +129,14 @@ Indexes:
 | POST | `/api/v1/reports/{report}/close` | session, owner | Close an active report manually |
 | POST | `/api/v1/reports/{report}/confirm` | session, non-owner | Confirm an active report someone else created |
 | GET | `/api/v1/public/reports` | none | Active outages inside a bounding box, no personal data |
+| GET | `/api/v1/public/stats` | none | Aggregate report counts and average duration, no personal data |
+| GET | `/api/v1/subscriptions` | session | List the caller's area subscriptions |
+| POST | `/api/v1/subscriptions` | session | Follow an area (point + radius) |
+| DELETE | `/api/v1/subscriptions/{subscription}` | session, owner | Stop following an area |
+| GET | `/api/v1/notifications` | session | Recent notifications and unread count |
+| POST | `/api/v1/notifications/{notification}/read` | session, owner | Mark a notification as read |
+| GET | `/api/v1/moderation/reports` | session, moderator | Every active report, across all users |
+| POST | `/api/v1/moderation/reports/{report}` | session, moderator | Hide or close any report, with a logged reason |
 
 Full request/response schemas are published as an OpenAPI 3.0 document at `api/openapi.yaml`, not duplicated here.
 
@@ -167,6 +208,22 @@ Full request/response schemas are published as an OpenAPI 3.0 document at `api/o
 
 **Trade-off:** `address` is `null` for a short window after creation (typically under a second, bounded by queue worker throughput) and can stay `null` indefinitely if Nominatim never responds successfully; every view already treats it as optional (`address` is nullable end to end, never required). The public map's live update for the resolved address reuses ADR-7's same broadcast channel, so no second real-time mechanism was introduced for this.
 
+### ADR-9: Zone subscriptions and notification delivery (bonus B3)
+
+**Decision:** A subscription is stored exactly like a report's location (a PostGIS `geography(Point, 4326)` plus a `radius_km`), and matching uses `ST_DWithin` against the new report's point. Delivery is through Laravel's built-in database notification channel, not email.
+
+**Why:** Reusing the same point-and-radius shape as `OutageReport` (ADR-2) means the matching query is the same kind of indexed spatial query already proven for the public bounding-box endpoint, not a second geo strategy. Database notifications were chosen over email because this project has no real mail transport configured (`MAIL_MAILER=log` — see ADR-1's reasoning for keeping evaluator setup keyless and account-free), and an in-app notification is demonstrable end-to-end in the review call without depending on a mailbox; the notification is dispatched through Laravel's `Notifiable` trait, so adding a `mail` channel later is a one-line change to `NewOutageNearYou::via()`, not a redesign.
+
+**Trade-off:** A user only learns about a new outage the next time they open the app (or via the live bell, since it polls on open, not pushed), unlike a true push notification. Matching happens in a queued job (`NotifySubscribersOfNewOutage`), same reasoning as ADR-8: a report must be creatable even if notifying every subscriber is slow, and the reporter is explicitly excluded from their own notification.
+
+### ADR-10: Moderator role model (bonus B6)
+
+**Decision:** A single boolean column, `users.is_moderator`, not a roles/permissions table.
+
+**Why:** The brief asks for one role with one capability (hide or close any report). A full roles-and-permissions system (e.g., a `roles` table, a pivot, a permissions matrix) models a problem this project does not have yet — multiple roles with overlapping, evolving capabilities — and would be unverifiable speculation about future requirements. `OutageReportPolicy::moderate()` is the single place this flag is checked, so upgrading to a real roles table later touches one method, not every call site.
+
+**Trade-off:** Does not scale to multiple distinct roles without a follow-up migration; acceptable because the brief defines exactly one. Every hide/close action is still required to go through `ReportModerationAction`, an explicit, queryable audit row (`moderator_id`, `action`, `reason`, timestamp) — the audit trail's existence does not depend on how richly roles are modeled.
+
 ## 5. Security Considerations
 
 - All report mutation endpoints are authorized through Laravel Policies, checked against the authenticated user, never against a client-supplied user id.
@@ -177,6 +234,8 @@ Full request/response schemas are published as an OpenAPI 3.0 document at `api/o
 - Containers run application processes as a non-root user where the base image supports it.
 - The `outages` WebSocket channel is public by design and carries nothing beyond the already-public resource's fields; confirming or editing a report is still only possible through the authenticated REST endpoints, never through the channel itself — Reverb only ever pushes, it never accepts client-authored state changes.
 - The Nominatim reverse-geocoding call is made server-side only, from the queue worker; the browser never talks to Nominatim directly and never needs a key for it.
+- Moderation (hide/close any report) is gated by `OutageReportPolicy::moderate()` checking `is_moderator`, never by a client-supplied flag; every action is written to `report_moderation_actions` with the acting moderator's id, so it cannot be anonymous.
+- A public statistics endpoint (`/api/v1/public/stats`) returns only aggregates (counts, averages) computed in SQL; it never returns individual report rows, so it cannot be used to enumerate reports the bounding-box endpoint would otherwise filter out.
 
 ## 6. Scalability Considerations
 
@@ -187,3 +246,4 @@ At the scale described in the brief (100,000 active users during a city-wide bla
 - The bounding-box query, already indexed, would benefit from a read-replica for public (unauthenticated) traffic, isolating it from the write path used by report creation.
 - Rate limiting, session storage and the queue already live in Redis, so horizontally scaling the PHP-FPM and queue-worker tiers behind the load balancer requires no state migration.
 - Nominatim's own usage policy (roughly 1 request/second) would not survive 100,000 reports/hour; at that scale the queued job would need to move to a paid or self-hosted geocoding backend, which is exactly why it is already isolated behind one service class (`NominatimReverseGeocoder`) rather than called inline from the controller.
+- Zone-subscription fan-out (bonus B3, `NotifySubscribersOfNewOutage`) scans active subscriptions with `ST_DWithin` on every new report; it is already a queued job rather than inline on the request path, but at this scale the subscriptions table itself would need a dedicated index-only query plan (it already has one, via the GiST index on the geography column) and the job would need to batch its notification inserts instead of writing one row per matching subscriber, to avoid turning a single popular report into thousands of individual writes.

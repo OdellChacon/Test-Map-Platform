@@ -44,10 +44,11 @@ Open:
 - Frontend: http://localhost:5173
 - API health check: http://localhost:8000/up
 
-Demo account created by the seeder:
+Demo accounts created by the seeder:
 
 ```
 demo@outagemap.test / password
+moderator@outagemap.test / password   (is_moderator: true — can access /moderation)
 ```
 
 ## Running the test suite
@@ -58,11 +59,21 @@ Tests run against a dedicated `outage_map_test` database, created automatically 
 docker compose exec api ./vendor/bin/pest
 ```
 
+Frontend unit tests (Vitest, jsdom):
+
+```bash
+docker compose exec client npm run test
+```
+
 ## Code style
 
 ```bash
 docker compose exec api ./vendor/bin/pint
 ```
+
+## Continuous integration
+
+A GitHub Actions workflow ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs on every push and pull request against `main`: backend (Pint + Pest against a `postgis/postgis` service container), frontend (lint + Vitest + build), and a Docker build of both images.
 
 ## API documentation
 
@@ -104,9 +115,15 @@ Removes containers and named volumes (database and node_modules/vendor caches), 
 
 Beyond the mandatory scope (see [PLAN.md](PLAN.md) §4 and §10 of the brief):
 
-- **Live updates over WebSockets** — the public map and "My reports" both subscribe to a public Reverb channel (`outages`) and update in real time (new report, closed, confirmed, address resolved), falling back to a 2-minute poll if a WebSocket message is ever missed. See ADR-7 in [ARCHITECTURE.md](ARCHITECTURE.md).
-- **Community confirmation** — any authenticated user other than a report's owner can confirm it exists; the count is shown on the public map and on the owner's own list. See ADR-4 in [ARCHITECTURE.md](ARCHITECTURE.md).
-- **Reverse geocoding** — a queued job resolves a human-readable address for every report via Nominatim, shown wherever the report appears. See ADR-8 in [ARCHITECTURE.md](ARCHITECTURE.md).
+- **Live updates over WebSockets (B1)** — the public map and "My reports" both subscribe to a public Reverb channel (`outages`) and update in real time (new report, closed, confirmed, address resolved), falling back to a 2-minute poll if a WebSocket message is ever missed. See ADR-7 in [ARCHITECTURE.md](ARCHITECTURE.md).
+- **Community confirmation (B2)** — any authenticated user other than a report's owner can confirm it exists; the count is shown on the public map and on the owner's own list. See ADR-4 in [ARCHITECTURE.md](ARCHITECTURE.md).
+- **Zone subscriptions (B3)** — an authenticated user draws a point + radius on the map ([SubscriptionsView.vue](client/src/views/SubscriptionsView.vue)); any new report inside that radius queues a database notification (bell icon in the navbar, unread badge) via `NotifySubscribersOfNewOutage`. See ADR-9 in [ARCHITECTURE.md](ARCHITECTURE.md).
+- **Frontend test suite (B4)** — Vitest + `@vue/test-utils`, covering services, the auth store and time-formatting utilities (`npm run test` in `client/`).
+- **Marker clustering (B5)** — `leaflet.markercluster` groups nearby reports on the public map at low zoom levels instead of overlapping circles, with a custom cluster-count badge.
+- **Moderator role (B6)** — users with `is_moderator` can hide or close any report from a moderation queue ([ModerationView.vue](client/src/views/ModerationView.vue)); every action is written to `report_moderation_actions` with the acting moderator's id. See ADR-10 in [ARCHITECTURE.md](ARCHITECTURE.md).
+- **CI pipeline (B7)** — see [Continuous integration](#continuous-integration) above.
+- **Reverse geocoding (B8)** — a queued job resolves a human-readable address for every report via Nominatim, shown wherever the report appears. See ADR-8 in [ARCHITECTURE.md](ARCHITECTURE.md).
+- **Outage history / statistics (B9)** — a public stats view ([HistoryView.vue](client/src/views/HistoryView.vue)) backed by `/api/v1/public/stats`, showing aggregate counts and a reports-per-day chart, computed in SQL with no individual report rows exposed.
 
 ## Assumptions
 
@@ -115,13 +132,13 @@ Decisions made where the brief left the choice open, beyond what's already argue
 - **Sanctum mode, database, map provider and frontend framework** (Sanctum SPA session, PostgreSQL+PostGIS, OpenStreetMap/Leaflet, Vue 3) are each a brief-sanctioned choice, not a gap — see ADR-1, ADR-2, ADR-5 and ADR-6 respectively for the reasoning.
 - **"No personal data" on the public endpoint** was read strictly as no name, email or user id — not as "hide everything the reporter wrote." The public resource does include the outage's own `description`, `duration_type`, start time and expiry, because §4.4 of the brief asks for exactly those on click; only the reporter's identity is withheld.
 - **Community confirmation (B2)** only adds a visible count; it does not auto-change a report's status or hide it after N confirmations. The brief allows either; changing visibility automatically felt like a second, unverified judgment call layered on top of ADR-4's "no auto-merge" reasoning, so confirmation stayed a pure signal.
-- **Bonus feature selection**: of the nine optional features, B1 (real-time), B2 (confirmation) and B8 (reverse geocoding) were implemented; B3, B4, B5, B6, B7 and B9 were not attempted, given the time budget and that core correctness was prioritized per §13 of the brief.
+- **Bonus feature selection**: all nine optional features (B1–B9) were implemented, in the priority order that gave the most evaluation signal per unit of time (core correctness, per §13 of the brief, came first).
 - **The API Docker image installs with dev dependencies** (Pest, Pint, Faker) rather than a stripped `--no-dev` build, so `./vendor/bin/pest`, `./vendor/bin/pint` and `db:seed` work immediately for an evaluator with no extra install step. This is explicitly a development/evaluation trade-off, documented in the Scalability section of [ARCHITECTURE.md](ARCHITECTURE.md).
 - **Reverse geocoding (B8)** is resolved once per report by a queued job and stored on the row (`address` column) — "cached on the server" was read as "resolved once, reused by every read," not "re-queried and cached per request."
 
 ## Known limitations and what would be improved with more time
 
 - The public map can still look visually noisy when many overlapping reports describe the same real-world outage (ADR-4); confirmation gives a corroboration signal but reports are never auto-merged.
-- No frontend test suite (bonus B4) and no CI pipeline (bonus B7) — with more time, Vitest for the services/stores and a GitHub Actions workflow running `pest`, `pint` and a Docker build on every push would be next.
 - Mobile responsiveness relies on the layout's flex/stack utilities reflowing correctly rather than screen-specific designs beyond the navbar and hero breakpoints; a pass with real device testing would be the next hardening step.
-- Zone subscriptions (B3), marker clustering (B5), a moderator role (B6) and an outage-history/statistics view (B9) were left for a future iteration, in that rough priority order for a real deployment.
+- `NotifySubscribersOfNewOutage` and `ResolveOutageReportAddress` run synchronously during the Pest suite (`QUEUE_CONNECTION=sync` is forced in `phpunit.xml`), so the existing report-creation tests make a real network call to Nominatim rather than a mocked one; this was a deliberate trade-off to avoid destabilizing the suite under time pressure rather than an oversight — see [ARCHITECTURE.md](ARCHITECTURE.md) for the geocoding service boundary that would make this easy to fake later.
+- Zone-subscription fan-out notifies every matching subscriber with one row per report; at the scale discussed in the Scalability section of [ARCHITECTURE.md](ARCHITECTURE.md), this would need to move to a batched insert.

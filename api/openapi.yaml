@@ -17,6 +17,9 @@ tags:
   - name: Auth
   - name: Reports
   - name: Public
+  - name: Subscriptions
+  - name: Notifications
+  - name: Moderation
 
 paths:
   /sanctum/csrf-cookie:
@@ -280,6 +283,161 @@ paths:
         '429':
           $ref: '#/components/responses/TooManyRequests'
 
+  /api/v1/public/stats:
+    get:
+      tags: [Public]
+      summary: Aggregate outage statistics (no authentication, no personal data)
+      responses:
+        '200':
+          description: Totals, active count and a 14-day report count series
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatsResponse'
+
+  /api/v1/subscriptions:
+    get:
+      tags: [Subscriptions]
+      summary: List the authenticated user's area subscriptions
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Subscriptions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OutageSubscriptionCollectionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+    post:
+      tags: [Subscriptions]
+      summary: Follow an area; notified when a new report falls inside it
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StoreOutageSubscriptionRequest'
+      responses:
+        '201':
+          description: Subscription created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OutageSubscriptionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /api/v1/subscriptions/{subscription}:
+    delete:
+      tags: [Subscriptions]
+      summary: Stop following an area
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: subscription
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/notifications:
+    get:
+      tags: [Notifications]
+      summary: List the authenticated user's recent notifications
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Notifications and unread count
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationCollectionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+
+  /api/v1/notifications/{notification}/read:
+    post:
+      tags: [Notifications]
+      summary: Mark a notification as read
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: notification
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Marked as read
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+
+  /api/v1/moderation/reports:
+    get:
+      tags: [Moderation]
+      summary: List every active report for moderation (moderators only)
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Active reports across all users
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OutageReportPaginatedResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/moderation/reports/{report}:
+    post:
+      tags: [Moderation]
+      summary: Hide or close any report, leaving an audit trail (moderators only)
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModerateReportRequest'
+      responses:
+        '200':
+          description: Report moderated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OutageReportResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          description: The report is not active
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+
 components:
   securitySchemes:
     sessionAuth:
@@ -397,7 +555,7 @@ components:
 
     ReportStatus:
       type: string
-      enum: [active, closed, expired]
+      enum: [active, closed, expired, hidden]
 
     ReportDurationType:
       type: string
@@ -539,6 +697,123 @@ components:
             type: array
             items:
               type: string
+
+    StoreOutageSubscriptionRequest:
+      type: object
+      required: [latitude, longitude, radius_km]
+      properties:
+        latitude:
+          type: number
+          format: float
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          format: float
+          minimum: -180
+          maximum: 180
+        radius_km:
+          type: number
+          format: float
+          minimum: 0.5
+          maximum: 25
+
+    OutageSubscription:
+      type: object
+      properties:
+        id:
+          type: integer
+        latitude:
+          type: number
+          format: float
+        longitude:
+          type: number
+          format: float
+        radius_km:
+          type: number
+          format: float
+        created_at:
+          type: string
+          format: date-time
+
+    OutageSubscriptionResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/OutageSubscription'
+
+    OutageSubscriptionCollectionResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/OutageSubscription'
+
+    NotificationCollectionResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              data:
+                type: object
+                properties:
+                  report_id: { type: integer }
+                  latitude: { type: number }
+                  longitude: { type: number }
+                  radius_km: { type: number }
+                  message: { type: string }
+              read_at:
+                type: string
+                format: date-time
+                nullable: true
+              created_at:
+                type: string
+                format: date-time
+        unread_count:
+          type: integer
+
+    ModerateReportRequest:
+      type: object
+      required: [action]
+      properties:
+        action:
+          type: string
+          enum: [hide, close]
+        reason:
+          type: string
+          nullable: true
+          maxLength: 500
+
+    StatsResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            total_reports:
+              type: integer
+            active_reports:
+              type: integer
+            average_duration_minutes:
+              type: number
+              nullable: true
+            reports_per_day:
+              type: array
+              items:
+                type: object
+                properties:
+                  date:
+                    type: string
+                    format: date
+                  count:
+                    type: integer
 
   responses:
     ValidationError:
