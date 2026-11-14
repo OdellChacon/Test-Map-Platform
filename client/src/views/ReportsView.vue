@@ -2,6 +2,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import MapAdapter from '@/components/MapAdapter.vue'
 import * as reportsService from '@/services/reports'
+import { useOutageChannel } from '@/composables/useOutageChannel'
 
 const reports = ref([])
 const isLoadingList = ref(false)
@@ -110,6 +111,20 @@ async function handleClose(report) {
   await loadReports()
 }
 
+function handleReportChanged({ action, id, report }) {
+  if (action === 'removed') {
+    return
+  }
+
+  reports.value = reports.value.map((item) =>
+    item.id === id
+      ? { ...item, address: report.address, confirmations_count: report.confirmations_count }
+      : item,
+  )
+}
+
+useOutageChannel(handleReportChanged)
+
 onMounted(loadReports)
 </script>
 
@@ -206,8 +221,13 @@ onMounted(loadReports)
             <span class="badge" :class="{ 'badge-muted': report.status !== 'active' }">{{
               report.status
             }}</span>
-            <span class="label-mono">#{{ report.id }}</span>
+            <div style="display: flex; gap: 0.5rem; align-items: center">
+              <span class="badge badge-muted">{{ report.confirmations_count }} confirmations</span>
+              <span class="label-mono">#{{ report.id }}</span>
+            </div>
           </div>
+
+          <p v-if="report.address">{{ report.address }}</p>
 
           <template v-if="editingReportId === report.id">
             <div class="field">

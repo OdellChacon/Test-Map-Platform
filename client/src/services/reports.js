@@ -15,3 +15,7 @@ export function updateReport(reportId, payload) {
 export function closeReport(reportId) {
   return http.post(`/api/v1/reports/${reportId}/close`).then((response) => response.data.data)
 }
+
+export function confirmReport(reportId) {
+  return http.post(`/api/v1/reports/${reportId}/confirm`).then((response) => response.data.data)
+}
