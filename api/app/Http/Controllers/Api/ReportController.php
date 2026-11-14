@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Reports\StoreOutageReportRequest;
 use App\Http\Requests\Reports\UpdateOutageReportRequest;
 use App\Http\Resources\OutageReportResource;
+use App\Jobs\NotifySubscribersOfNewOutage;
 use App\Jobs\ResolveOutageReportAddress;
 use App\Models\OutageReport;
 use Illuminate\Database\QueryException;
@@ -56,6 +57,7 @@ class ReportController extends Controller
         ], $latitude, $longitude);
 
         ResolveOutageReportAddress::dispatch($report->id, $latitude, $longitude);
+        NotifySubscribersOfNewOutage::dispatch($report->id, $latitude, $longitude, (float) $radiusKm, $request->user()->id);
 
         PublicOutageReportChanged::dispatch('created', $report->id, [
             'latitude' => $latitude,

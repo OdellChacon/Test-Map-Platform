@@ -20,11 +20,17 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_moderator' => 'boolean',
         ];
     }
 
     public function outageReports(): HasMany
     {
         return $this->hasMany(OutageReport::class);
+    }
+
+    public function outageSubscriptions(): HasMany
+    {
+        return $this->hasMany(OutageSubscription::class);
     }
 }

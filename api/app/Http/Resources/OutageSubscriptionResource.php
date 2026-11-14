@@ -1,0 +1,20 @@
+<?php
+
+namespace App\Http\Resources;
+
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+class OutageSubscriptionResource extends JsonResource
+{
+    public function toArray(Request $request): array
+    {
+        return [
+            'id' => $this->id,
+            'latitude' => (float) $this->latitude,
+            'longitude' => (float) $this->longitude,
+            'radius_km' => (float) $this->radius_km,
+            'created_at' => $this->created_at->toIso8601String(),
+        ];
+    }
+}
