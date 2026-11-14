@@ -83,6 +83,10 @@ The full OpenAPI 3.0 contract, with every endpoint, request/response schema and 
 
 OpenStreetMap tiles via Leaflet (ADR-5 in [ARCHITECTURE.md](ARCHITECTURE.md)). **No API key, account or billing is required** — this is the whole reason that provider was chosen over Google Maps. Nothing to configure here beyond what the quick start already does.
 
+## Reverb credentials
+
+The `REVERB_APP_ID`, `REVERB_APP_KEY` and `REVERB_APP_SECRET` values in `api/.env.example` (and the matching `VITE_REVERB_APP_KEY` in `client/.env.example`) are local-dev-only placeholders. They MUST be regenerated (e.g. via `php artisan reverb:install` or manually) before any real or shared deployment.
+
 ## Project structure
 
 ```
