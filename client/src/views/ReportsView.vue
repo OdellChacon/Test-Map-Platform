@@ -3,6 +3,7 @@ import { onMounted, reactive, ref } from 'vue'
 import MapAdapter from '@/components/MapAdapter.vue'
 import * as reportsService from '@/services/reports'
 import { useOutageChannel } from '@/composables/useOutageChannel'
+import { formatDateTime, formatRemainingTime } from '@/utils/time'
 
 const reports = ref([])
 const isLoadingList = ref(false)
@@ -260,10 +261,12 @@ onMounted(loadReports)
 
           <template v-else>
             <p>Radius: {{ report.radius_km }} km</p>
-            <p v-if="report.duration_type === 'fixed'">
-              Expires: {{ new Date(report.expires_at).toLocaleString() }}
+            <p>Started {{ formatDateTime(report.created_at) }}</p>
+            <p v-if="report.status === 'active'">
+              {{ formatRemainingTime(report.expires_at, report.duration_type) }}
             </p>
-            <p v-else>Until closed (expires {{ new Date(report.expires_at).toLocaleString() }})</p>
+            <p v-else-if="report.status === 'closed'">Closed {{ formatDateTime(report.closed_at) }}</p>
+            <p v-else>Expired {{ formatDateTime(report.expires_at) }}</p>
             <p v-if="report.description">{{ report.description }}</p>
 
             <div v-if="report.status === 'active'" style="display: flex; gap: 0.5rem">

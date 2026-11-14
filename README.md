@@ -68,6 +68,10 @@ docker compose exec api ./vendor/bin/pint
 
 The full OpenAPI 3.0 contract, with every endpoint, request/response schema and error shape, is at [api/openapi.yaml](api/openapi.yaml).
 
+## Map provider
+
+OpenStreetMap tiles via Leaflet (ADR-5 in [ARCHITECTURE.md](ARCHITECTURE.md)). **No API key, account or billing is required** — this is the whole reason that provider was chosen over Google Maps. Nothing to configure here beyond what the quick start already does.
+
 ## Project structure
 
 ```
@@ -104,6 +108,20 @@ Beyond the mandatory scope (see [PLAN.md](PLAN.md) §4 and §10 of the brief):
 - **Community confirmation** — any authenticated user other than a report's owner can confirm it exists; the count is shown on the public map and on the owner's own list. See ADR-4 in [ARCHITECTURE.md](ARCHITECTURE.md).
 - **Reverse geocoding** — a queued job resolves a human-readable address for every report via Nominatim, shown wherever the report appears. See ADR-8 in [ARCHITECTURE.md](ARCHITECTURE.md).
 
-## Known limitations
+## Assumptions
 
-The public map can still look visually noisy when many overlapping reports describe the same real-world outage (ADR-4); confirmation gives a corroboration signal but reports are never auto-merged.
+Decisions made where the brief left the choice open, beyond what's already argued as an ADR in [ARCHITECTURE.md](ARCHITECTURE.md):
+
+- **Sanctum mode, database, map provider and frontend framework** (Sanctum SPA session, PostgreSQL+PostGIS, OpenStreetMap/Leaflet, Vue 3) are each a brief-sanctioned choice, not a gap — see ADR-1, ADR-2, ADR-5 and ADR-6 respectively for the reasoning.
+- **"No personal data" on the public endpoint** was read strictly as no name, email or user id — not as "hide everything the reporter wrote." The public resource does include the outage's own `description`, `duration_type`, start time and expiry, because §4.4 of the brief asks for exactly those on click; only the reporter's identity is withheld.
+- **Community confirmation (B2)** only adds a visible count; it does not auto-change a report's status or hide it after N confirmations. The brief allows either; changing visibility automatically felt like a second, unverified judgment call layered on top of ADR-4's "no auto-merge" reasoning, so confirmation stayed a pure signal.
+- **Bonus feature selection**: of the nine optional features, B1 (real-time), B2 (confirmation) and B8 (reverse geocoding) were implemented; B3, B4, B5, B6, B7 and B9 were not attempted, given the time budget and that core correctness was prioritized per §13 of the brief.
+- **The API Docker image installs with dev dependencies** (Pest, Pint, Faker) rather than a stripped `--no-dev` build, so `./vendor/bin/pest`, `./vendor/bin/pint` and `db:seed` work immediately for an evaluator with no extra install step. This is explicitly a development/evaluation trade-off, documented in the Scalability section of [ARCHITECTURE.md](ARCHITECTURE.md).
+- **Reverse geocoding (B8)** is resolved once per report by a queued job and stored on the row (`address` column) — "cached on the server" was read as "resolved once, reused by every read," not "re-queried and cached per request."
+
+## Known limitations and what would be improved with more time
+
+- The public map can still look visually noisy when many overlapping reports describe the same real-world outage (ADR-4); confirmation gives a corroboration signal but reports are never auto-merged.
+- No frontend test suite (bonus B4) and no CI pipeline (bonus B7) — with more time, Vitest for the services/stores and a GitHub Actions workflow running `pest`, `pint` and a Docker build on every push would be next.
+- Mobile responsiveness relies on the layout's flex/stack utilities reflowing correctly rather than screen-specific designs beyond the navbar and hero breakpoints; a pass with real device testing would be the next hardening step.
+- Zone subscriptions (B3), marker clustering (B5), a moderator role (B6) and an outage-history/statistics view (B9) were left for a future iteration, in that rough priority order for a real deployment.

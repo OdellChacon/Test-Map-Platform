@@ -63,11 +63,46 @@ function emitBounds() {
   })
 }
 
+function buildPopupElement(marker) {
+  const popup = document.createElement('div')
+  popup.className = 'map-popup'
+
+  const addLine = (text) => {
+    const line = document.createElement('p')
+    line.textContent = text
+    popup.appendChild(line)
+  }
+
+  addLine(`Radius: ${marker.radiusKm} km`)
+
+  if (marker.startedAtLabel) {
+    addLine(marker.startedAtLabel)
+  }
+
+  if (marker.remainingLabel) {
+    addLine(marker.remainingLabel)
+  }
+
+  if (marker.address) {
+    addLine(marker.address)
+  }
+
+  if (marker.description) {
+    addLine(marker.description)
+  }
+
+  if (typeof marker.confirmationsCount === 'number') {
+    addLine(`${marker.confirmationsCount} confirmations`)
+  }
+
+  return popup
+}
+
 function renderMarkers(markers) {
   markersLayer.clearLayers()
 
   markers.forEach((marker) => {
-    L.circleMarker([marker.latitude, marker.longitude], {
+    const point = L.circleMarker([marker.latitude, marker.longitude], {
       radius: 6,
       color: '#e5484d',
       weight: 2,
@@ -75,13 +110,16 @@ function renderMarkers(markers) {
       fillOpacity: 1,
     }).addTo(markersLayer)
 
-    L.circle([marker.latitude, marker.longitude], {
+    const circle = L.circle([marker.latitude, marker.longitude], {
       radius: metersFromKm(marker.radiusKm),
       color: '#e5484d',
       weight: 1.5,
       fillColor: '#e5484d',
       fillOpacity: 0.12,
     }).addTo(markersLayer)
+
+    point.bindPopup(buildPopupElement(marker))
+    circle.bindPopup(buildPopupElement(marker))
   })
 }
 
@@ -146,5 +184,21 @@ watch(
   width: 100%;
   height: 320px;
   border-radius: var(--radius);
+}
+</style>
+
+<style>
+.map-popup {
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+}
+
+.map-popup p {
+  margin: 0 0 0.35rem;
+  color: var(--color-text);
+}
+
+.map-popup p:last-child {
+  margin-bottom: 0;
 }
 </style>

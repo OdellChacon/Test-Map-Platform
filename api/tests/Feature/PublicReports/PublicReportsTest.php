@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\OutageReport;
+use App\Models\User;
 
 function madridBoundingBox(array $overrides = []): array
 {
@@ -46,16 +47,21 @@ test('it excludes reports that are active but past their query-time expiry', fun
     expect($response->json('data'))->toBeEmpty();
 });
 
-test('the public resource exposes no personal data', function () {
-    $report = OutageReport::factory()->create(['description' => 'Sensitive details about my house']);
+test('the public resource exposes the outage description but no reporter identity', function () {
+    $reporter = User::factory()->create(['email' => 'reporter@example.com']);
+    $report = OutageReport::factory()->for($reporter)->create(['description' => 'Transformer down near the plaza']);
     $report->setCoordinates(40.4168, -3.7038);
 
     $response = $this->getJson('/api/v1/public/reports?'.http_build_query(madridBoundingBox()))
         ->assertOk();
 
     expect($response->json('data.0'))->toHaveKeys([
-        'id', 'latitude', 'longitude', 'radius_km', 'address', 'confirmations_count', 'expires_at',
-    ])->and($response->json('data.0'))->not->toHaveKeys(['user_id', 'description', 'user']);
+        'id', 'latitude', 'longitude', 'radius_km', 'duration_type', 'description',
+        'address', 'confirmations_count', 'expires_at', 'created_at',
+    ])->and($response->json('data.0.description'))->toBe('Transformer down near the plaza')
+        ->and($response->json('data.0'))->not->toHaveKeys(['user_id', 'user']);
+
+    expect($response->json())->not->toContain('reporter@example.com');
 });
 
 test('it validates the bounding box parameters', function () {

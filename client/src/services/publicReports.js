@@ -7,8 +7,12 @@ export function fetchPublicReports(bounds) {
       latitude: report.latitude,
       longitude: report.longitude,
       radiusKm: report.radius_km,
+      durationType: report.duration_type,
+      description: report.description,
       address: report.address,
       confirmationsCount: report.confirmations_count,
+      expiresAt: report.expires_at,
+      createdAt: report.created_at,
     })),
   )
 }

@@ -474,7 +474,7 @@ components:
 
     PublicOutageReport:
       type: object
-      description: Carries no personal data - no user, no description.
+      description: Carries the outage's own details but no reporter identity - no user, no name, no email.
       properties:
         id:
           type: integer
@@ -487,12 +487,21 @@ components:
         radius_km:
           type: number
           format: float
+        duration_type:
+          $ref: '#/components/schemas/ReportDurationType'
+        description:
+          type: string
+          nullable: true
         address:
           type: string
           nullable: true
         confirmations_count:
           type: integer
         expires_at:
+          type: string
+          format: date-time
+          description: Only meaningful when duration_type is "fixed"; an "until_closed" report should be shown as such, not as a countdown.
+        created_at:
           type: string
           format: date-time
 

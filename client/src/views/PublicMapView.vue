@@ -5,6 +5,7 @@ import * as publicReportsService from '@/services/publicReports'
 import * as reportsService from '@/services/reports'
 import { useAuthStore } from '@/stores/auth'
 import { useOutageChannel } from '@/composables/useOutageChannel'
+import { formatDateTime, formatRemainingTime } from '@/utils/time'
 
 const FALLBACK_POLL_INTERVAL_MS = 120000
 
@@ -18,6 +19,14 @@ const confirmErrors = ref({})
 
 let currentBounds = null
 let pollTimer = null
+
+function withDisplayLabels(report) {
+  return {
+    ...report,
+    startedAtLabel: `Started ${formatDateTime(report.createdAt)}`,
+    remainingLabel: formatRemainingTime(report.expiresAt, report.durationType),
+  }
+}
 
 function isWithinCurrentBounds(latitude, longitude) {
   if (!currentBounds) {
@@ -41,7 +50,8 @@ async function loadReports() {
   loadError.value = ''
 
   try {
-    markers.value = await publicReportsService.fetchPublicReports(currentBounds)
+    const reports = await publicReportsService.fetchPublicReports(currentBounds)
+    markers.value = reports.map(withDisplayLabels)
   } catch {
     loadError.value = 'Could not load live outage data. Try again in a moment.'
   } finally {
@@ -66,14 +76,18 @@ function handleReportChanged({ action, id, report }) {
     return
   }
 
-  const updatedMarker = {
+  const updatedMarker = withDisplayLabels({
     id,
     latitude: report.latitude,
     longitude: report.longitude,
     radiusKm: report.radius_km,
+    durationType: report.duration_type,
+    description: report.description,
     address: report.address,
     confirmationsCount: report.confirmations_count,
-  }
+    expiresAt: report.expires_at,
+    createdAt: report.created_at,
+  })
 
   markers.value = exists
     ? markers.value.map((marker) => (marker.id === id ? updatedMarker : marker))
@@ -117,6 +131,34 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="page stack-lg">
+    <section class="hero">
+      <h1 class="heading-two-tone">
+        Know your outage.
+        <span class="line-muted">See it the moment it's reported.</span>
+      </h1>
+      <p>A live map of power outages reported by your community, updated in real time.</p>
+    </section>
+
+    <section class="stack">
+      <div class="how-it-works">
+        <div class="step">
+          <span class="step-number">01</span>
+          <h3>Report an outage</h3>
+          <p>Click a point on the map, set the affected radius and how long it will likely last.</p>
+        </div>
+        <div class="step">
+          <span class="step-number">02</span>
+          <h3>See it live</h3>
+          <p>Anyone, logged in or not, sees active outages appear, update and disappear in real time.</p>
+        </div>
+        <div class="step">
+          <span class="step-number">03</span>
+          <h3>Confirm or close</h3>
+          <p>Neighbors confirm an outage is still ongoing; the reporter closes it once power is back.</p>
+        </div>
+      </div>
+    </section>
+
     <section class="window-panel">
       <div class="window-panel__header">
         <span class="window-panel__dot window-panel__dot--accent"></span>
@@ -126,7 +168,7 @@ onBeforeUnmount(() => {
       </div>
       <div class="card stack">
         <h2>Live outage map</h2>
-        <p>Active outages reported by the community, updated in real time.</p>
+        <p>Click an outage on the map for its details.</p>
 
         <MapAdapter :markers="markers" report-bounds @update:bounds="handleBoundsChange" />
 
@@ -146,8 +188,11 @@ onBeforeUnmount(() => {
           <span class="badge">{{ marker.confirmationsCount }} confirmations</span>
         </div>
 
-        <p v-if="marker.address">{{ marker.address }}</p>
         <p>Radius: {{ marker.radiusKm }} km</p>
+        <p>{{ marker.startedAtLabel }}</p>
+        <p>{{ marker.remainingLabel }}</p>
+        <p v-if="marker.address">{{ marker.address }}</p>
+        <p v-if="marker.description">{{ marker.description }}</p>
 
         <template v-if="authStore.isAuthenticated">
           <button
