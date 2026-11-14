@@ -2,6 +2,9 @@
 import { onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import 'leaflet.markercluster'
+import 'leaflet.markercluster/dist/MarkerCluster.css'
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css'
 
 const props = defineProps({
   latitude: { type: Number, default: 40.4168 },
@@ -19,7 +22,8 @@ const container = ref(null)
 let map = null
 let centerMarker = null
 let radiusCircle = null
-let markersLayer = null
+let radiusLayer = null
+let clusterLayer = null
 
 function metersFromKm(km) {
   return km * 1000
@@ -99,7 +103,8 @@ function buildPopupElement(marker) {
 }
 
 function renderMarkers(markers) {
-  markersLayer.clearLayers()
+  radiusLayer.clearLayers()
+  clusterLayer.clearLayers()
 
   markers.forEach((marker) => {
     const point = L.circleMarker([marker.latitude, marker.longitude], {
@@ -108,7 +113,7 @@ function renderMarkers(markers) {
       weight: 2,
       fillColor: '#e5484d',
       fillOpacity: 1,
-    }).addTo(markersLayer)
+    })
 
     const circle = L.circle([marker.latitude, marker.longitude], {
       radius: metersFromKm(marker.radiusKm),
@@ -116,10 +121,12 @@ function renderMarkers(markers) {
       weight: 1.5,
       fillColor: '#e5484d',
       fillOpacity: 0.12,
-    }).addTo(markersLayer)
+    }).addTo(radiusLayer)
 
     point.bindPopup(buildPopupElement(marker))
     circle.bindPopup(buildPopupElement(marker))
+
+    clusterLayer.addLayer(point)
   })
 }
 
@@ -131,7 +138,15 @@ onMounted(() => {
     maxZoom: 19,
   }).addTo(map)
 
-  markersLayer = L.layerGroup().addTo(map)
+  radiusLayer = L.layerGroup().addTo(map)
+  clusterLayer = L.markerClusterGroup({
+    maxClusterRadius: 50,
+    iconCreateFunction: (cluster) => L.divIcon({
+      html: `<span>${cluster.getChildCount()}</span>`,
+      className: 'map-cluster',
+      iconSize: [32, 32],
+    }),
+  }).addTo(map)
   renderMarkers(props.markers)
 
   if (props.selectable) {
@@ -200,5 +215,20 @@ watch(
 
 .map-popup p:last-child {
   margin-bottom: 0;
+}
+
+.map-cluster {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color-accent-soft);
+  border: 2px solid var(--color-accent);
+  color: var(--color-accent);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.8rem;
 }
 </style>

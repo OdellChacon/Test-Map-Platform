@@ -21,7 +21,7 @@ return [
         'decay_minutes' => (int) env('OUTAGE_PUBLIC_RATE_LIMIT_DECAY_MINUTES', 1),
     ],
 
-    'max_bounding_box_span_degrees' => (float) env('OUTAGE_MAX_BOUNDING_BOX_SPAN_DEGREES', 10),
+    'max_bounding_box_span_degrees' => (float) env('OUTAGE_MAX_BOUNDING_BOX_SPAN_DEGREES', 60),
 
     'confirmation_rate_limit' => [
         'attempts' => (int) env('OUTAGE_CONFIRMATION_RATE_LIMIT_ATTEMPTS', 20),

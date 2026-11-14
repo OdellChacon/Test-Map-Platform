@@ -21,8 +21,8 @@
         <env name="BROADCAST_CONNECTION" value="null" force="true"/>
         <env name="CACHE_STORE" value="array" force="true"/>
         <env name="DB_CONNECTION" value="pgsql" force="true"/>
-        <env name="DB_HOST" value="postgres" force="true"/>
-        <env name="DB_PORT" value="5432" force="true"/>
+        <env name="DB_HOST" value="postgres"/>
+        <env name="DB_PORT" value="5432"/>
         <env name="DB_DATABASE" value="outage_map_test" force="true"/>
         <env name="DB_USERNAME" value="outage_map" force="true"/>
         <env name="DB_PASSWORD" value="secret" force="true"/>
@@ -39,7 +39,7 @@
         <env name="AUTH_RATE_LIMIT_DECAY_MINUTES" value="1" force="true"/>
         <env name="OUTAGE_PUBLIC_RATE_LIMIT_ATTEMPTS" value="60" force="true"/>
         <env name="OUTAGE_PUBLIC_RATE_LIMIT_DECAY_MINUTES" value="1" force="true"/>
-        <env name="OUTAGE_MAX_BOUNDING_BOX_SPAN_DEGREES" value="10" force="true"/>
+        <env name="OUTAGE_MAX_BOUNDING_BOX_SPAN_DEGREES" value="60" force="true"/>
         <env name="PULSE_ENABLED" value="false" force="true"/>
         <env name="TELESCOPE_ENABLED" value="false" force="true"/>
         <env name="NIGHTWATCH_ENABLED" value="false" force="true"/>
@@ -49,8 +49,8 @@
         <server name="BROADCAST_CONNECTION" value="null" force="true"/>
         <server name="CACHE_STORE" value="array" force="true"/>
         <server name="DB_CONNECTION" value="pgsql" force="true"/>
-        <server name="DB_HOST" value="postgres" force="true"/>
-        <server name="DB_PORT" value="5432" force="true"/>
+        <server name="DB_HOST" value="postgres"/>
+        <server name="DB_PORT" value="5432"/>
         <server name="DB_DATABASE" value="outage_map_test" force="true"/>
         <server name="DB_USERNAME" value="outage_map" force="true"/>
         <server name="DB_PASSWORD" value="secret" force="true"/>
@@ -67,7 +67,7 @@
         <server name="AUTH_RATE_LIMIT_DECAY_MINUTES" value="1" force="true"/>
         <server name="OUTAGE_PUBLIC_RATE_LIMIT_ATTEMPTS" value="60" force="true"/>
         <server name="OUTAGE_PUBLIC_RATE_LIMIT_DECAY_MINUTES" value="1" force="true"/>
-        <server name="OUTAGE_MAX_BOUNDING_BOX_SPAN_DEGREES" value="10" force="true"/>
+        <server name="OUTAGE_MAX_BOUNDING_BOX_SPAN_DEGREES" value="60" force="true"/>
         <server name="PULSE_ENABLED" value="false" force="true"/>
         <server name="TELESCOPE_ENABLED" value="false" force="true"/>
         <server name="NIGHTWATCH_ENABLED" value="false" force="true"/>
