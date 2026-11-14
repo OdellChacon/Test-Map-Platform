@@ -65,6 +65,7 @@ class ReportController extends Controller
             'radius_km' => (float) $radiusKm,
             'address' => null,
             'expires_at' => $expiresAt->toIso8601String(),
+            'created_at' => $report->created_at->toIso8601String(),
             'confirmations_count' => 0,
         ]);
 
@@ -97,6 +98,7 @@ class ReportController extends Controller
             'radius_km' => (float) $report->radius_km,
             'address' => $report->address,
             'expires_at' => $report->expires_at->toIso8601String(),
+            'created_at' => $report->created_at->toIso8601String(),
             'confirmations_count' => $report->confirmations()->count(),
         ]);
 
@@ -150,6 +152,7 @@ class ReportController extends Controller
             'radius_km' => (float) $report->radius_km,
             'address' => $report->address,
             'expires_at' => $report->expires_at->toIso8601String(),
+            'created_at' => $report->created_at->toIso8601String(),
             'confirmations_count' => $confirmationsCount,
         ]);
 
