@@ -26,4 +26,9 @@ class OutageReportPolicy
     {
         return (bool) $user->is_moderator;
     }
+
+    public function viewModerationQueue(User $user): bool
+    {
+        return (bool) $user->is_moderator;
+    }
 }

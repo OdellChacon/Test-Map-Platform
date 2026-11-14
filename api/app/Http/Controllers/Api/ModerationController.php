@@ -16,9 +16,7 @@ class ModerationController extends Controller
 {
     public function index(Request $request): AnonymousResourceCollection
     {
-        if (! $request->user()->is_moderator) {
-            abort(403);
-        }
+        $this->authorize('viewModerationQueue', OutageReport::class);
 
         $reports = OutageReport::query()
             ->active()
