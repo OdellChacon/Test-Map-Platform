@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\ReportStatus;
 use App\Models\OutageReport;
 use App\Models\User;
 
@@ -27,4 +28,14 @@ test('the reports list is paginated', function () {
 
     expect($response->json('data'))->toHaveCount(15);
     expect($response->json('meta.total'))->toBe(20);
+});
+
+test('a report past its expiry shows as expired even if the scheduler has not run yet', function () {
+    $user = User::factory()->create();
+    $report = OutageReport::factory()->for($user)->create(['expires_at' => now()->subMinute()]);
+
+    $response = $this->actingAs($user)->getJson('/api/v1/reports')->assertOk();
+
+    expect($response->json('data.0.status'))->toBe(ReportStatus::Expired->value);
+    expect($report->status)->toBe(ReportStatus::Active);
 });

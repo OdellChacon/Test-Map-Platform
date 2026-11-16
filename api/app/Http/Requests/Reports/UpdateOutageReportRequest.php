@@ -16,7 +16,7 @@ class UpdateOutageReportRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'radius_km' => ['sometimes', 'numeric', 'between:0.5,25'],
+            'radius_km' => ['sometimes', 'numeric', 'between:0.5,'.config('outage.max_report_radius_km')],
             'duration_hours' => ['sometimes', 'integer', 'between:1,'.config('outage.max_report_duration_hours')],
             'description' => ['sometimes', 'nullable', 'string', 'max:500'],
         ];

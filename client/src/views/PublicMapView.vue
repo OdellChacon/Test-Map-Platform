@@ -7,6 +7,10 @@ import { useAuthStore } from '@/stores/auth'
 import { useOutageChannel } from '@/composables/useOutageChannel'
 import { formatDateTime, formatRemainingTime } from '@/utils/time'
 
+defineProps({
+  showHero: { type: Boolean, default: true },
+})
+
 const FALLBACK_POLL_INTERVAL_MS = 120000
 
 const authStore = useAuthStore()
@@ -131,33 +135,35 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="page stack-lg">
-    <section class="hero">
-      <h1 class="heading-two-tone">
-        Know your outage.
-        <span class="line-muted">See it the moment it's reported.</span>
-      </h1>
-      <p>A live map of power outages reported by your community, updated in real time.</p>
-    </section>
+    <template v-if="showHero">
+      <section class="hero">
+        <h1 class="heading-two-tone">
+          Know your outage.
+          <span class="line-muted">See it the moment it's reported.</span>
+        </h1>
+        <p>A live map of power outages reported by your community, updated in real time.</p>
+      </section>
 
-    <section class="stack">
-      <div class="how-it-works">
-        <div class="step">
-          <span class="step-number">01</span>
-          <h3>Report an outage</h3>
-          <p>Click a point on the map, set the affected radius and how long it will likely last.</p>
+      <section class="stack">
+        <div class="how-it-works">
+          <div class="step">
+            <span class="step-number">01</span>
+            <h3>Report an outage</h3>
+            <p>Click a point on the map, set the affected radius and how long it will likely last.</p>
+          </div>
+          <div class="step">
+            <span class="step-number">02</span>
+            <h3>See it live</h3>
+            <p>Anyone, logged in or not, sees active outages appear, update and disappear in real time.</p>
+          </div>
+          <div class="step">
+            <span class="step-number">03</span>
+            <h3>Confirm or close</h3>
+            <p>Neighbors confirm an outage is still ongoing; the reporter closes it once power is back.</p>
+          </div>
         </div>
-        <div class="step">
-          <span class="step-number">02</span>
-          <h3>See it live</h3>
-          <p>Anyone, logged in or not, sees active outages appear, update and disappear in real time.</p>
-        </div>
-        <div class="step">
-          <span class="step-number">03</span>
-          <h3>Confirm or close</h3>
-          <p>Neighbors confirm an outage is still ongoing; the reporter closes it once power is back.</p>
-        </div>
-      </div>
-    </section>
+      </section>
+    </template>
 
     <section class="window-panel">
       <div class="window-panel__header">

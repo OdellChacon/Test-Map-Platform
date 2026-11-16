@@ -29,16 +29,17 @@ cp .env.example .env
 cp api/.env.example api/.env
 cp client/.env.example client/.env
 
-docker compose build api
-docker compose run --rm api php artisan key:generate
+docker compose up -d --build
+```
 
-docker compose up -d
+That single command builds the images, starts every service and brings the stack to a ready state: the `api` container's entrypoint generates `APP_KEY` on first boot (if `api/.env` doesn't already have one), runs pending migrations, and seeds the demo data on a genuinely fresh database only (detected by the absence of a migrations table, so restarting the stack later never re-seeds and duplicates the demo accounts). `queue`, `scheduler`, `reverb` and `nginx` all wait on `api`'s health check, so they only start once that's done — which also means they pick up the generated `APP_KEY` from `api/.env` instead of the empty value `docker-compose`'s `env_file` would otherwise have snapshotted into their environment at container creation.
 
+To run migrations or seeding again by hand later (e.g. after `docker compose down -v`):
+
+```bash
 docker compose exec api php artisan migrate
 docker compose exec api php artisan db:seed
 ```
-
-The key must be generated with a one-off container, before the long-running services start: `docker-compose`'s `env_file` snapshots `api/.env` into each service's environment at container creation, so a later `docker compose exec api php artisan key:generate` would write the key to the file but the already-running `api`/`queue`/`scheduler` containers would never see it without a restart.
 
 Open:
 - Frontend: http://localhost:5173

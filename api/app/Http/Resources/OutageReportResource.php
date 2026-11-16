@@ -16,7 +16,7 @@ class OutageReportResource extends JsonResource
             'radius_km' => (float) $this->radius_km,
             'duration_type' => $this->duration_type->value,
             'duration_hours' => $this->duration_hours,
-            'status' => $this->status->value,
+            'status' => $this->effective_status->value,
             'description' => $this->description,
             'address' => $this->address,
             'confirmations_count' => $this->confirmations_count ?? $this->confirmations()->count(),

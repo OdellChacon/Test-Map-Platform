@@ -17,7 +17,7 @@ async function handleLogout() {
     <RouterLink to="/" class="label-mono">Outage Map Platform</RouterLink>
 
     <nav class="navbar__links">
-      <RouterLink to="/">Live Map</RouterLink>
+      <RouterLink to="/map">Live Map</RouterLink>
       <RouterLink to="/history">History</RouterLink>
 
       <template v-if="authStore.isAuthenticated">

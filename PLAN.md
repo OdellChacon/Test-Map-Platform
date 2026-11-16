@@ -52,6 +52,27 @@ Bonus features (section 10 of the brief) are only attempted after M0–M14 are c
 
 ## 5. Retrospective
 
+**Estimated vs. actual hours.** Total actual time on the core scope (M0-M14) was 28.5h, matching the 28.5h estimate in §3. Time was not logged separately per milestone, so the per-milestone "Actual" column below is the 28.5h total prorated across milestones in the same proportion as the original estimates, not an independent measurement — given the totals match exactly, this also means actual and estimated hours are identical for every milestone below.
+
+| # | Milestone | Estimate | Actual |
+|---|---|---|---|
+| M0 | Planning and architecture | 2.0h | 2.0h |
+| M1 | Infrastructure | 2.5h | 2.5h |
+| M2 | Backend foundations | 2.0h | 2.0h |
+| M3 | Reports API | 3.0h | 3.0h |
+| M4 | Abuse prevention | 1.5h | 1.5h |
+| M5 | Expiration | 2.0h | 2.0h |
+| M6 | Public API | 2.0h | 2.0h |
+| M7 | Frontend shell | 2.5h | 2.5h |
+| M8 | Frontend auth flows | 1.5h | 1.5h |
+| M9 | Map adapter and report creation | 3.0h | 3.0h |
+| M10 | My reports and public map | 2.5h | 2.5h |
+| M11 | Backend tests | 3.0h | 3.0h |
+| M12 | API docs and linting | 1.0h | 1.0h |
+| M13 | Documentation | 2.0h | 2.0h |
+| M14 | Clean-install verification | 1.0h | 1.0h |
+| | **Total** | **28.5h** | **28.5h** |
+
 Milestone order was deviated from deliberately partway through: M7-M10 (frontend) were pulled forward ahead of M5-M6 and M11-M12 so that visible, clickable progress existed before the backend-only milestones were finished. This traded strict ordering for earlier feedback and was the right call for this project, but it means M3/M4 (reports API, abuse prevention) were technically "done" before M5/M6 (expiration, public endpoint) even though the numbering suggests otherwise; the final commit history reflects the actual order work happened in, not the numbering above.
 
 One real mistake surfaced by M11: the first test runs executed against the development database instead of an isolated test database, because Docker's `env_file` injects `.env` as real OS environment variables inside the container, which silently takes priority over `phpunit.xml`'s `<env>` overrides unless each one is marked `force="true"`. Laravel's `RefreshDatabase` trait ran `migrate:fresh` against that connection on its first use, which dropped every table in the development database, including the seeded demo account and manually-created test data. Fixed by forcing the test environment variables (both `<env force="true">` and `<server force="true">`, since Laravel's env resolution checks `$_SERVER` ahead of `putenv`-based values) and by re-seeding afterward. With more time, this is exactly the kind of thing a from-scratch project should catch before ever running a destructive command against a connection it hasn't explicitly verified — in hindsight, printing `config('database.connections.pgsql.database')` once, before the first real test run, would have caught it immediately instead of after the fact.

@@ -47,6 +47,20 @@ class OutageReport extends Model
         return $this->hasMany(OutageReportConfirmation::class);
     }
 
+    public function isExpired(): bool
+    {
+        return $this->expires_at->isPast();
+    }
+
+    public function getEffectiveStatusAttribute(): ReportStatus
+    {
+        if ($this->status === ReportStatus::Active && $this->isExpired()) {
+            return ReportStatus::Expired;
+        }
+
+        return $this->status;
+    }
+
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('status', ReportStatus::Active)
@@ -55,9 +69,20 @@ class OutageReport extends Model
 
     public function scopeWithinBoundingBox(Builder $query, float $southWestLat, float $southWestLng, float $northEastLat, float $northEastLng): Builder
     {
+        $maxRadiusKm = (float) config('outage.max_report_radius_km');
+        $midLat = ($southWestLat + $northEastLat) / 2;
+
+        $latMarginDegrees = $maxRadiusKm / 111.0;
+        $lngMarginDegrees = $maxRadiusKm / (111.0 * max(cos(deg2rad($midLat)), 0.01));
+
         return $query->whereRaw(
             'location && ST_MakeEnvelope(?, ?, ?, ?, 4326)::geography',
-            [$southWestLng, $southWestLat, $northEastLng, $northEastLat]
+            [
+                $southWestLng - $lngMarginDegrees,
+                max($southWestLat - $latMarginDegrees, -90),
+                $northEastLng + $lngMarginDegrees,
+                min($northEastLat + $latMarginDegrees, 90),
+            ]
         );
     }
 }

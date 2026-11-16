@@ -42,3 +42,15 @@ test('a guest cannot close a report', function () {
 
     $this->postJson("/api/v1/reports/{$report->id}/close")->assertUnauthorized();
 });
+
+test('a report past its expiry cannot be closed as if it were still active, even if the scheduler has not run yet', function () {
+    $user = User::factory()->create();
+    $report = OutageReport::factory()->for($user)->create(['expires_at' => now()->subMinute()]);
+
+    $this->actingAs($user)
+        ->postJson("/api/v1/reports/{$report->id}/close")
+        ->assertStatus(422);
+
+    $report->refresh();
+    expect($report->closed_at)->toBeNull();
+});

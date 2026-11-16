@@ -55,3 +55,13 @@ test('a guest cannot confirm a report', function () {
 
     $this->postJson("/api/v1/reports/{$report->id}/confirm")->assertUnauthorized();
 });
+
+test('a report past its expiry cannot be confirmed, even if the scheduler has not run yet', function () {
+    $owner = User::factory()->create();
+    $confirmer = User::factory()->create();
+    $report = OutageReport::factory()->for($owner)->create(['expires_at' => now()->subMinute()]);
+
+    $this->actingAs($confirmer)
+        ->postJson("/api/v1/reports/{$report->id}/confirm")
+        ->assertStatus(422);
+});

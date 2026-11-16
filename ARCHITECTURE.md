@@ -168,6 +168,8 @@ Full request/response schemas are published as an OpenAPI 3.0 document at `api/o
 
 **Trade-off:** Two places to keep in sync. Mitigated by computing `expires_at` once at creation time (fixed duration: `created_at + duration_hours`; "until closed": `created_at + 72h`) and never recomputing it elsewhere, so there is a single stored value both paths read.
 
+The same computed-expiry check also gates the owner-facing mutations (`update`, `close`, `confirm`) and what "my reports" displays, via `OutageReport::getEffectiveStatusAttribute()` — not just the public map's query scope. Without it, a report whose `expires_at` has passed but whose stored `status` is still `active` (because the scheduler hasn't run yet) could be edited, closed, confirmed, or shown as "active" in the owner's own list, which is the same stale-state window this ADR exists to close, just reached through a different endpoint.
+
 ### ADR-4: Duplicate reports handling
 
 **Decision:** No automatic merging or deduplication. Overlapping reports from different users are stored and displayed independently, each as its own circle on the map. Instead of merging, any authenticated user other than the report's owner can confirm an existing active report (bonus B2), which increments a `confirmations_count` surfaced on both the owner's and the public view — a corroboration signal, not a different storage path.

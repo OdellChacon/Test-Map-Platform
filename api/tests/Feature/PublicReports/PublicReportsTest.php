@@ -37,6 +37,17 @@ test('it only returns active reports inside the bounding box', function () {
     expect($response->json('data.0.id'))->toBe($insideMadrid->id);
 });
 
+test('it includes a report whose circle can reach into the bounding box even if its center sits just outside it', function () {
+    $justOutsideSouth = OutageReport::factory()->create(['radius_km' => 25]);
+    $justOutsideSouth->setCoordinates(38.95, -3.7038);
+
+    $response = $this->getJson('/api/v1/public/reports?'.http_build_query(madridBoundingBox()))
+        ->assertOk();
+
+    expect($response->json('data'))->toHaveCount(1);
+    expect($response->json('data.0.id'))->toBe($justOutsideSouth->id);
+});
+
 test('it excludes reports that are active but past their query-time expiry', function () {
     $staleActive = OutageReport::factory()->create(['expires_at' => now()->subMinute()]);
     $staleActive->setCoordinates(40.4168, -3.7038);

@@ -19,7 +19,7 @@ class StoreOutageReportRequest extends FormRequest
         return [
             'latitude' => ['required', 'numeric', 'between:-90,90'],
             'longitude' => ['required', 'numeric', 'between:-180,180'],
-            'radius_km' => ['required', 'numeric', 'between:0.5,25'],
+            'radius_km' => ['required', 'numeric', 'between:0.5,'.config('outage.max_report_radius_km')],
             'duration_type' => ['required', Rule::enum(ReportDurationType::class)],
             'duration_hours' => [
                 Rule::requiredIf($this->input('duration_type') === ReportDurationType::Fixed->value),

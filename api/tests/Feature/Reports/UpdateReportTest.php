@@ -71,3 +71,20 @@ test('a guest cannot update a report', function () {
 
     $this->patchJson("/api/v1/reports/{$report->id}", ['radius_km' => 5])->assertUnauthorized();
 });
+
+test('a report past its expiry cannot be revived by editing it, even if the scheduler has not run yet', function () {
+    $user = User::factory()->create();
+    $report = OutageReport::factory()->for($user)->create([
+        'duration_type' => ReportDurationType::Fixed,
+        'duration_hours' => 4,
+        'expires_at' => now()->subMinute(),
+    ]);
+
+    $this->actingAs($user)
+        ->patchJson("/api/v1/reports/{$report->id}", ['duration_hours' => 72])
+        ->assertStatus(422);
+
+    $report->refresh();
+    expect($report->duration_hours)->toBe(4);
+    expect($report->expires_at->isPast())->toBeTrue();
+});

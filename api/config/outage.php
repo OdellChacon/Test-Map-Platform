@@ -6,6 +6,8 @@ return [
 
     'max_active_reports_per_user' => (int) env('OUTAGE_MAX_ACTIVE_REPORTS_PER_USER', 3),
 
+    'max_report_radius_km' => (float) env('OUTAGE_MAX_REPORT_RADIUS_KM', 25),
+
     'report_rate_limit' => [
         'attempts' => (int) env('OUTAGE_REPORT_RATE_LIMIT_ATTEMPTS', 5),
         'decay_minutes' => (int) env('OUTAGE_REPORT_RATE_LIMIT_DECAY_MINUTES', 60),

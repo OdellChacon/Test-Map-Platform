@@ -11,7 +11,13 @@ import SubscriptionsView from '@/views/SubscriptionsView.vue'
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-    { path: '/', name: 'map', component: PublicMapView },
+    { path: '/', name: 'landing', component: PublicMapView },
+    {
+      path: '/map',
+      name: 'map',
+      component: PublicMapView,
+      props: { showHero: false },
+    },
     { path: '/history', name: 'history', component: HistoryView },
     { path: '/login', name: 'login', component: LoginView, meta: { guestOnly: true } },
     { path: '/register', name: 'register', component: RegisterView, meta: { guestOnly: true } },

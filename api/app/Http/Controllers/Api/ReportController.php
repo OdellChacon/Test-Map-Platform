@@ -12,10 +12,13 @@ use App\Http\Resources\OutageReportResource;
 use App\Jobs\NotifySubscribersOfNewOutage;
 use App\Jobs\ResolveOutageReportAddress;
 use App\Models\OutageReport;
+use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class ReportController extends Controller
 {
@@ -46,15 +49,27 @@ class ReportController extends Controller
         $longitude = $request->validated('longitude');
         $radiusKm = $request->validated('radius_km');
 
-        $report = OutageReport::createWithCoordinates([
-            'user_id' => $request->user()->id,
-            'radius_km' => $radiusKm,
-            'duration_type' => $durationType,
-            'duration_hours' => $durationHours,
-            'expires_at' => $expiresAt,
-            'status' => ReportStatus::Active,
-            'description' => $request->validated('description'),
-        ], $latitude, $longitude);
+        $report = DB::transaction(function () use ($request, $durationType, $durationHours, $expiresAt, $latitude, $longitude, $radiusKm) {
+            User::query()->whereKey($request->user()->id)->lockForUpdate()->first();
+
+            $activeReports = $request->user()->outageReports()->active()->count();
+
+            if ($activeReports >= config('outage.max_active_reports_per_user')) {
+                throw ValidationException::withMessages([
+                    'reports' => ['You have reached the maximum number of active outage reports allowed.'],
+                ]);
+            }
+
+            return OutageReport::createWithCoordinates([
+                'user_id' => $request->user()->id,
+                'radius_km' => $radiusKm,
+                'duration_type' => $durationType,
+                'duration_hours' => $durationHours,
+                'expires_at' => $expiresAt,
+                'status' => ReportStatus::Active,
+                'description' => $request->validated('description'),
+            ], $latitude, $longitude);
+        });
 
         ResolveOutageReportAddress::dispatch($report->id, $latitude, $longitude);
         NotifySubscribersOfNewOutage::dispatch($report->id, $latitude, $longitude, (float) $radiusKm, $request->user()->id);
@@ -80,7 +95,7 @@ class ReportController extends Controller
     {
         $this->authorize('update', $report);
 
-        if ($report->status !== ReportStatus::Active) {
+        if ($report->effective_status !== ReportStatus::Active) {
             abort(422, 'Only active reports can be edited.');
         }
 
@@ -113,7 +128,7 @@ class ReportController extends Controller
     {
         $this->authorize('close', $report);
 
-        if ($report->status !== ReportStatus::Active) {
+        if ($report->effective_status !== ReportStatus::Active) {
             abort(422, 'Only active reports can be closed.');
         }
 
@@ -133,7 +148,7 @@ class ReportController extends Controller
     {
         $this->authorize('confirm', $report);
 
-        if ($report->status !== ReportStatus::Active) {
+        if ($report->effective_status !== ReportStatus::Active) {
             abort(422, 'Only active reports can be confirmed.');
         }
 
