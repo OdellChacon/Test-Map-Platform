@@ -35,8 +35,34 @@ class OutageReportFactory extends Factory
     public function configure(): static
     {
         return $this->afterCreating(function (OutageReport $report) {
-            $report->setCoordinates(fake()->latitude(-60, 70), fake()->longitude(-170, 170));
+            [$latitude, $longitude] = self::randomPointNear(40.4168, -3.7038, 15);
+            $report->setCoordinates($latitude, $longitude);
         });
+    }
+
+    /**
+     * A uniformly-distributed random point within $maxRadiusKm of ($lat, $lng).
+     * Defaults the map's seed data to Madrid, where the frontend's map centers by default.
+     */
+    public static function randomPointNear(float $lat, float $lng, float $maxRadiusKm): array
+    {
+        $earthRadiusKm = 6371;
+        $distanceKm = sqrt(fake()->randomFloat(4, 0, 1)) * $maxRadiusKm;
+        $bearing = deg2rad(fake()->randomFloat(2, 0, 360));
+        $angularDistance = $distanceKm / $earthRadiusKm;
+
+        $latRad = deg2rad($lat);
+        $lngRad = deg2rad($lng);
+
+        $newLatRad = asin(
+            sin($latRad) * cos($angularDistance) + cos($latRad) * sin($angularDistance) * cos($bearing)
+        );
+        $newLngRad = $lngRad + atan2(
+            sin($bearing) * sin($angularDistance) * cos($latRad),
+            cos($angularDistance) - sin($latRad) * sin($newLatRad)
+        );
+
+        return [rad2deg($newLatRad), rad2deg($newLngRad)];
     }
 
     public function closed(): static
@@ -51,6 +77,7 @@ class OutageReportFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'status' => ReportStatus::Expired,
+            'created_at' => now()->subHours(2),
             'expires_at' => now()->subHour(),
         ]);
     }

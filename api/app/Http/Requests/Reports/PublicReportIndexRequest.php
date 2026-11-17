@@ -29,9 +29,16 @@ class PublicReportIndexRequest extends FormRequest
                 return;
             }
 
+            if ($this->input('south_west_lat') > $this->input('north_east_lat')
+                || $this->input('south_west_lng') > $this->input('north_east_lng')) {
+                $validator->errors()->add('bounding_box', 'The south west corner must be below and to the left of the north east corner.');
+
+                return;
+            }
+
             $maxSpan = config('outage.max_bounding_box_span_degrees');
-            $latSpan = abs($this->input('north_east_lat') - $this->input('south_west_lat'));
-            $lngSpan = abs($this->input('north_east_lng') - $this->input('south_west_lng'));
+            $latSpan = $this->input('north_east_lat') - $this->input('south_west_lat');
+            $lngSpan = $this->input('north_east_lng') - $this->input('south_west_lng');
 
             if ($latSpan > $maxSpan || $lngSpan > $maxSpan) {
                 $validator->errors()->add('bounding_box', 'The requested area is too large.');
