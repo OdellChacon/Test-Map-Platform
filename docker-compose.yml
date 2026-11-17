@@ -13,7 +13,12 @@ services:
       - postgres-data:/var/lib/postgresql/data
       - ./postgres/init/20-create-test-database.sh:/docker-entrypoint-initdb.d/20-create-test-database.sh:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_DATABASE}"]
+      # -h 127.0.0.1 forces a real TCP check instead of the Unix socket. During initdb, Postgres
+      # runs a temporary server that only listens on that same socket path to run the scripts in
+      # docker-entrypoint-initdb.d/, so a socket-based pg_isready can report "ready" before the
+      # final server (the one that actually accepts TCP connections from other containers) has
+      # started, causing api's first migration attempt to hit "Connection refused".
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U ${DB_USERNAME} -d ${DB_DATABASE}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -63,6 +68,9 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      # First boot runs composer's cached autoload, generates APP_KEY, migrates, and seeds demo
+      # data before FPM is ever reachable — give it real room before failures start counting.
+      start_period: 90s
     restart: unless-stopped
 
   nginx:

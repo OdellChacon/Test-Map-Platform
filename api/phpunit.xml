@@ -16,6 +16,16 @@
     </source>
     <php>
         <env name="APP_ENV" value="testing" force="true"/>
+        <!--
+            Fixed test-only key, forced so it wins over whatever is (or isn't yet) in api/.env.
+            Compose snapshots api/.env into the container's environment at creation time, before
+            the entrypoint has generated a real APP_KEY on first boot; `docker compose exec` reuses
+            that already-running environment rather than re-reading the file, so Laravel sees the
+            empty value and refuses to boot with MissingAppKeyException. This key is never used
+            outside the `testing` env (array sessions/cache, a throwaway test database), so hardcoding
+            it here is fine — it is not a real secret.
+        -->
+        <env name="APP_KEY" value="base64:Vvez0hsLRmW31luHTSj78WH91R4s3XhzJ8/B5/EoEZE=" force="true"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file" force="true"/>
         <env name="BCRYPT_ROUNDS" value="4" force="true"/>
         <env name="BROADCAST_CONNECTION" value="null" force="true"/>
@@ -44,6 +54,7 @@
         <env name="TELESCOPE_ENABLED" value="false" force="true"/>
         <env name="NIGHTWATCH_ENABLED" value="false" force="true"/>
         <server name="APP_ENV" value="testing" force="true"/>
+        <server name="APP_KEY" value="base64:Vvez0hsLRmW31luHTSj78WH91R4s3XhzJ8/B5/EoEZE=" force="true"/>
         <server name="APP_MAINTENANCE_DRIVER" value="file" force="true"/>
         <server name="BCRYPT_ROUNDS" value="4" force="true"/>
         <server name="BROADCAST_CONNECTION" value="null" force="true"/>
