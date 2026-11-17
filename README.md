@@ -52,6 +52,8 @@ demo@outagemap.test / password
 moderator@outagemap.test / password   (is_moderator: true — can access /moderation)
 ```
 
+`demo@outagemap.test`'s "My reports" comes pre-populated with 4 reports, so an evaluator sees a mix of states without creating anything first: 2 active, 1 closed and 1 expired (this also keeps the account below `max_active_reports_per_user`, so a new report can still be created live during the review). The seeder also creates 10 other users with 1–3 reports each, plus two small clusters of nearby reports (to exercise the public map's marker clustering), and a random spread of confirmations across the demo user's reports.
+
 ## Running the test suite
 
 Tests run against a dedicated `outage_map_test` database, created automatically from the `template_postgis` template the first time the `postgres` container starts (see [postgres/init](postgres/init)). They never touch the development database.
@@ -140,6 +142,7 @@ Decisions made where the brief left the choice open, beyond what's already argue
 - **Bonus feature selection**: all nine optional features (B1–B9) were implemented, in the priority order that gave the most evaluation signal per unit of time (core correctness, per §13 of the brief, came first).
 - **The API Docker image installs with dev dependencies** (Pest, Pint, Faker) rather than a stripped `--no-dev` build, so `./vendor/bin/pest`, `./vendor/bin/pint` and `db:seed` work immediately for an evaluator with no extra install step. This is explicitly a development/evaluation trade-off, documented in the Scalability section of [ARCHITECTURE.md](ARCHITECTURE.md).
 - **Reverse geocoding (B8)** is resolved once per report by a queued job and stored on the row (`address` column) — "cached on the server" was read as "resolved once, reused by every read," not "re-queried and cached per request."
+- **PHP version**: [PLAN.md](PLAN.md) scoped PHP 8.3 at planning time; the project was actually built on PHP 8.4 (see `require.php` in [api/composer.json](api/composer.json)), the latest stable release by the time development started. PLAN.md is left as-is as a historical record of the original plan; this is the correction.
 
 ## Known limitations and what would be improved with more time
 

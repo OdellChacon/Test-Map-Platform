@@ -24,22 +24,39 @@ let centerMarker = null
 let radiusCircle = null
 let radiusLayer = null
 let clusterLayer = null
+let accentColor = '#e5484d'
 
 function metersFromKm(km) {
   return km * 1000
+}
+
+function buildCenterIcon() {
+  return L.divIcon({
+    className: 'map-center-marker',
+    html: `<span style="display:block;width:12px;height:12px;border-radius:50%;background:${accentColor};border:2px solid ${accentColor};"></span>`,
+    iconSize: [12, 12],
+    iconAnchor: [6, 6],
+  })
 }
 
 function renderPoint(lat, lng, radiusKm) {
   if (centerMarker) {
     centerMarker.setLatLng([lat, lng])
   } else {
-    centerMarker = L.circleMarker([lat, lng], {
-      radius: 6,
-      color: '#e5484d',
-      weight: 2,
-      fillColor: '#e5484d',
-      fillOpacity: 1,
+    centerMarker = L.marker([lat, lng], {
+      icon: buildCenterIcon(),
+      draggable: true,
     }).addTo(map)
+
+    centerMarker.on('dragend', () => {
+      const { lat: draggedLat, lng: draggedLng } = centerMarker.getLatLng()
+
+      if (radiusCircle) {
+        radiusCircle.setLatLng([draggedLat, draggedLng])
+      }
+
+      emit('update:point', { latitude: draggedLat, longitude: draggedLng })
+    })
   }
 
   if (radiusCircle) {
@@ -48,9 +65,9 @@ function renderPoint(lat, lng, radiusKm) {
   } else {
     radiusCircle = L.circle([lat, lng], {
       radius: metersFromKm(radiusKm),
-      color: '#e5484d',
+      color: accentColor,
       weight: 1.5,
-      fillColor: '#e5484d',
+      fillColor: accentColor,
       fillOpacity: 0.15,
     }).addTo(map)
   }
@@ -109,17 +126,17 @@ function renderMarkers(markers) {
   markers.forEach((marker) => {
     const point = L.circleMarker([marker.latitude, marker.longitude], {
       radius: 6,
-      color: '#e5484d',
+      color: accentColor,
       weight: 2,
-      fillColor: '#e5484d',
+      fillColor: accentColor,
       fillOpacity: 1,
     })
 
     const circle = L.circle([marker.latitude, marker.longitude], {
       radius: metersFromKm(marker.radiusKm),
-      color: '#e5484d',
+      color: accentColor,
       weight: 1.5,
-      fillColor: '#e5484d',
+      fillColor: accentColor,
       fillOpacity: 0.12,
     }).addTo(radiusLayer)
 
@@ -131,6 +148,14 @@ function renderMarkers(markers) {
 }
 
 onMounted(() => {
+  const tokenColor = getComputedStyle(document.documentElement)
+    .getPropertyValue('--color-accent')
+    .trim()
+
+  if (tokenColor) {
+    accentColor = tokenColor
+  }
+
   map = L.map(container.value).setView([props.latitude, props.longitude], props.zoom)
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -230,5 +255,13 @@ watch(
   font-family: var(--font-mono);
   font-weight: 700;
   font-size: 0.8rem;
+}
+
+.map-center-marker {
+  cursor: grab;
+}
+
+.map-center-marker:active {
+  cursor: grabbing;
 }
 </style>

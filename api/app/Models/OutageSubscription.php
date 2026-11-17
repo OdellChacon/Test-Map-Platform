@@ -25,11 +25,11 @@ class OutageSubscription extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function scopeNear(Builder $query, string $pointWkt): Builder
+    public function scopeNear(Builder $query, string $pointWkt, float $reportRadiusKm = 0): Builder
     {
         return $query->whereRaw(
-            'ST_DWithin(location, ST_GeogFromText(?), radius_km * 1000)',
-            [$pointWkt]
+            'ST_DWithin(location, ST_GeogFromText(?), (radius_km + ?) * 1000)',
+            [$pointWkt, $reportRadiusKm]
         );
     }
 }

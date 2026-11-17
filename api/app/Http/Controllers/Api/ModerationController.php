@@ -11,6 +11,7 @@ use App\Models\OutageReport;
 use App\Models\ReportModerationAction;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Validation\ValidationException;
 
 class ModerationController extends Controller
 {
@@ -32,8 +33,10 @@ class ModerationController extends Controller
     {
         $this->authorize('moderate', $report);
 
-        if ($report->status !== ReportStatus::Active) {
-            abort(422, 'Only active reports can be moderated.');
+        if ($report->effective_status !== ReportStatus::Active) {
+            throw ValidationException::withMessages([
+                'report' => ['Only active reports can be moderated.'],
+            ]);
         }
 
         $action = $request->validated('action');

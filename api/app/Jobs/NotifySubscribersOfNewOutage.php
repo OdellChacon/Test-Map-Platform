@@ -27,7 +27,7 @@ class NotifySubscribersOfNewOutage implements ShouldQueue
         $pointWkt = "SRID=4326;POINT({$this->longitude} {$this->latitude})";
 
         $subscribers = OutageSubscription::query()
-            ->near($pointWkt)
+            ->near($pointWkt, $this->radiusKm)
             ->where('user_id', '!=', $this->reporterId)
             ->with('user')
             ->get()

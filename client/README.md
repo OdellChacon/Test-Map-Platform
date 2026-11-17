@@ -1,44 +1,33 @@
-# client
+# Outage Map Platform — Client
 
-This template should help get you started developing with Vue 3 in Vite.
+This is the frontend of the [Outage Map Platform](../README.md): a Vue 3 SPA (Composition API, Vue Router, Pinia) that renders the live public outage map (Leaflet + OpenStreetMap tiles, with marker clustering), lets users report and manage outages, and shows real-time updates over Laravel Echo/Reverb.
 
-## Recommended IDE Setup
+For installation, running the full stack with Docker, demo accounts and everything else, see the **[root README](../README.md)** — that's the single source of truth for setup instructions and this file doesn't duplicate them.
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+## Working directly in `client/` (without Docker)
 
-## Recommended Browser Setup
+These commands assume you have Node (`^22.18.0` or `>=24.12.0`, per `package.json`'s `engines`) and run `npm install` first, from inside `client/`. If you're using the Docker setup, prefix each with `docker compose exec client` instead (see the root README).
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+Dev server with hot reload:
 
-## Customize configuration
-
-See [Vite Configuration Reference](https://vite.dev/config/).
-
-## Project Setup
-
-```sh
-npm install
-```
-
-### Compile and Hot-Reload for Development
-
-```sh
+```bash
 npm run dev
 ```
 
-### Compile and Minify for Production
+Production build:
 
-```sh
+```bash
 npm run build
 ```
 
-### Lint with [ESLint](https://eslint.org/)
+Lint (oxlint + eslint, both with `--fix`):
 
-```sh
+```bash
 npm run lint
+```
+
+Unit tests (Vitest + `@vue/test-utils`, jsdom):
+
+```bash
+npm run test
 ```

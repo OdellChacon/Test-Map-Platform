@@ -7,8 +7,15 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 async function handleLogout() {
-  await authStore.logout()
-  router.push('/login')
+  try {
+    await authStore.logout()
+  } catch {
+    // Server logout failed (session already expired, network down, etc.) —
+    // still clear local auth state and send the user to /login below.
+  } finally {
+    authStore.user = null
+    router.push('/login')
+  }
 }
 </script>
 

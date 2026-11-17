@@ -10,7 +10,17 @@ class UpdateOutageReportRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        $report = $this->route('report');
+
+        // Route model binding may not be resolved yet at this point depending on
+        // middleware/binding resolution order. If so, let the request through;
+        // the controller's $this->authorize('update', $report) still enforces
+        // ownership as a safety net.
+        if ($report === null) {
+            return true;
+        }
+
+        return $this->user()->id === $report->user_id;
     }
 
     public function rules(): array

@@ -8,17 +8,23 @@ const authStore = useAuthStore()
 
 const form = reactive({ email: '', password: '' })
 const errors = ref({})
+const generalError = ref('')
 const isSubmitting = ref(false)
 
 async function handleSubmit() {
   errors.value = {}
+  generalError.value = ''
   isSubmitting.value = true
 
   try {
     await authStore.login(form)
     router.push('/reports')
   } catch (error) {
-    errors.value = error.response?.data?.errors ?? { email: ['Unable to log in.'] }
+    if (error.response) {
+      errors.value = error.response.data?.errors ?? {}
+    } else {
+      generalError.value = 'Unable to log in. Please check your connection and try again.'
+    }
   } finally {
     isSubmitting.value = false
   }
@@ -29,6 +35,7 @@ async function handleSubmit() {
   <div class="page">
     <div class="card" style="max-width: 420px; margin: 0 auto">
       <h2>Log in</h2>
+      <p v-if="generalError" class="field-error">{{ generalError }}</p>
       <form class="stack" style="margin-top: 1rem" @submit.prevent="handleSubmit">
         <div class="field">
           <label for="email">Email</label>

@@ -1,11 +1,15 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import * as notificationsService from '@/services/notifications'
 import { formatDateTime } from '@/utils/time'
+
+const POLL_INTERVAL_MS = 60000
 
 const notifications = ref([])
 const unreadCount = ref(0)
 const isOpen = ref(false)
+
+let pollTimer = null
 
 async function loadNotifications() {
   const response = await notificationsService.fetchNotifications()
@@ -31,7 +35,14 @@ async function handleRead(notification) {
   unreadCount.value = Math.max(0, unreadCount.value - 1)
 }
 
-onMounted(loadNotifications)
+onMounted(() => {
+  loadNotifications()
+  pollTimer = setInterval(loadNotifications, POLL_INTERVAL_MS)
+})
+
+onBeforeUnmount(() => {
+  clearInterval(pollTimer)
+})
 </script>
 
 <template>

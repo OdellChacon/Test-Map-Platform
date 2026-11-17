@@ -57,6 +57,23 @@ test('a user cannot update another user\'s report', function () {
         ->assertForbidden();
 });
 
+test('a non-owner sending an invalid payload still gets forbidden rather than a validation error', function () {
+    $owner = User::factory()->create();
+    $otherUser = User::factory()->create();
+    $report = OutageReport::factory()->for($owner)->create([
+        'duration_type' => ReportDurationType::UntilClosed,
+        'duration_hours' => null,
+    ]);
+
+    // duration_hours is only valid on a Fixed-duration report, so this payload
+    // would fail validation (422) if ownership were checked after the rules
+    // ran. Ownership must be rejected first, before validation reveals
+    // anything about the report (e.g. its duration_type).
+    $this->actingAs($otherUser)
+        ->patchJson("/api/v1/reports/{$report->id}", ['duration_hours' => 10])
+        ->assertForbidden();
+});
+
 test('a closed report cannot be edited', function () {
     $user = User::factory()->create();
     $report = OutageReport::factory()->closed()->for($user)->create();

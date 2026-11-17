@@ -42,11 +42,19 @@ const router = createRouter({
   ],
 })
 
+let loadCurrentUserPromise = null
+
 router.beforeEach(async (to) => {
   const authStore = useAuthStore()
 
   if (!authStore.initialized) {
-    await authStore.loadCurrentUser()
+    if (!loadCurrentUserPromise) {
+      loadCurrentUserPromise = authStore.loadCurrentUser().finally(() => {
+        loadCurrentUserPromise = null
+      })
+    }
+
+    await loadCurrentUserPromise
   }
 
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {

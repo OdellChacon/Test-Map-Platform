@@ -88,6 +88,21 @@ test('the notify job skips a subscriber outside the zone', function () {
     expect($subscriber->fresh()->notifications()->count())->toBe(0);
 });
 
+test('the notify job notifies a subscriber when the report\'s own radius reaches a nearby small subscription', function () {
+    $reporter = User::factory()->create();
+    $subscriber = User::factory()->create();
+
+    // ~12km north of the report's center: outside the subscriber's 5km radius alone,
+    // but within reach once the report's own 15km radius is added to it.
+    OutageSubscription::createWithCoordinates(
+        ['user_id' => $subscriber->id, 'radius_km' => 5], 40.5518, -3.7038
+    );
+
+    (new NotifySubscribersOfNewOutage(1, 40.4168, -3.7038, 15, $reporter->id))->handle();
+
+    expect($subscriber->fresh()->notifications()->count())->toBe(1);
+});
+
 test('the notify job never notifies the reporter about their own report', function () {
     $reporter = User::factory()->create();
 

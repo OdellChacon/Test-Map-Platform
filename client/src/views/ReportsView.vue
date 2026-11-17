@@ -186,6 +186,12 @@ onMounted(loadReports)
             selectable
             @update:point="handlePointSelected"
           />
+          <span v-if="createErrors.latitude" class="field-error">{{
+            createErrors.latitude[0]
+          }}</span>
+          <span v-if="createErrors.longitude" class="field-error">{{
+            createErrors.longitude[0]
+          }}</span>
 
           <div class="field">
             <label for="radius_km">Radius: {{ createForm.radius_km }} km</label>
@@ -232,6 +238,9 @@ onMounted(loadReports)
               maxlength="500"
               rows="2"
             ></textarea>
+            <span v-if="createErrors.description" class="field-error">{{
+              createErrors.description[0]
+            }}</span>
           </div>
 
           <span v-if="createErrors.reports" class="field-error">{{ createErrors.reports[0] }}</span>

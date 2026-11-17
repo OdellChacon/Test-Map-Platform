@@ -1,6 +1,10 @@
 services:
   postgres:
     image: postgis/postgis:16-3.4
+    # DB_DATABASE/DB_USERNAME/DB_PASSWORD also exist in api/.env (Laravel's own config), but that
+    # copy is never read here and is overridden on the api/queue/scheduler/reverb services below,
+    # so the root .env is the single source of truth for these 3 values. Keeping them in sync by
+    # hand is exactly the bug this works around: edit them only here, not in api/.env.
     environment:
       POSTGRES_DB: ${DB_DATABASE}
       POSTGRES_USER: ${DB_USERNAME}
@@ -37,13 +41,25 @@ services:
       - api-vendor:/var/www/html/vendor
     env_file:
       - ./api/.env
+    # DB_DATABASE/DB_USERNAME/DB_PASSWORD are intentionally overridden here (env_file/environment
+    # combined; `environment` wins) so the root .env is the single source of truth for the DB
+    # credentials shared with the `postgres` service below. See the comment on `postgres` for why.
+    environment:
+      DB_DATABASE: ${DB_DATABASE}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "php", "artisan", "migrate:status"]
+      # `migrate:status` alone only proves the PHP CLI can reach the DB — it says nothing about
+      # whether the FPM *master* process is actually bound and listening on 9000. `nc` ships in
+      # this base image (busybox) and `-z` does a zero-I/O connect check, so combining both means
+      # the service is only reported healthy when FPM is actually accepting FastCGI connections
+      # AND the app can talk to the database.
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 9000 && php artisan migrate:status"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -77,6 +93,11 @@ services:
       - api-vendor:/var/www/html/vendor
     env_file:
       - ./api/.env
+    # See the comment on the `postgres` service: root .env is the single source of truth.
+    environment:
+      DB_DATABASE: ${DB_DATABASE}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
     depends_on:
       api:
         condition: service_healthy
@@ -97,6 +118,11 @@ services:
       - api-vendor:/var/www/html/vendor
     env_file:
       - ./api/.env
+    # See the comment on the `postgres` service: root .env is the single source of truth.
+    environment:
+      DB_DATABASE: ${DB_DATABASE}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
     depends_on:
       api:
         condition: service_healthy
@@ -117,6 +143,11 @@ services:
       - api-vendor:/var/www/html/vendor
     env_file:
       - ./api/.env
+    # See the comment on the `postgres` service: root .env is the single source of truth.
+    environment:
+      DB_DATABASE: ${DB_DATABASE}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
     ports:
       - "${REVERB_PORT:-8081}:8080"
     depends_on:
@@ -140,7 +171,8 @@ services:
     ports:
       - "${CLIENT_PORT:-5173}:5173"
     depends_on:
-      - nginx
+      nginx:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:

@@ -96,7 +96,9 @@ class ReportController extends Controller
         $this->authorize('update', $report);
 
         if ($report->effective_status !== ReportStatus::Active) {
-            abort(422, 'Only active reports can be edited.');
+            throw ValidationException::withMessages([
+                'report' => ['Only active reports can be edited.'],
+            ]);
         }
 
         $attributes = $request->validated();
@@ -129,7 +131,9 @@ class ReportController extends Controller
         $this->authorize('close', $report);
 
         if ($report->effective_status !== ReportStatus::Active) {
-            abort(422, 'Only active reports can be closed.');
+            throw ValidationException::withMessages([
+                'report' => ['Only active reports can be closed.'],
+            ]);
         }
 
         $report->update([
@@ -149,17 +153,35 @@ class ReportController extends Controller
         $this->authorize('confirm', $report);
 
         if ($report->effective_status !== ReportStatus::Active) {
-            abort(422, 'Only active reports can be confirmed.');
+            throw ValidationException::withMessages([
+                'report' => ['Only active reports can be confirmed.'],
+            ]);
+        }
+
+        $alreadyConfirmed = $report->confirmations()
+            ->where('user_id', $request->user()->id)
+            ->exists();
+
+        if ($alreadyConfirmed) {
+            throw ValidationException::withMessages([
+                'confirmation' => ['You have already confirmed this report.'],
+            ]);
         }
 
         try {
             $report->confirmations()->create(['user_id' => $request->user()->id]);
         } catch (QueryException $exception) {
-            if ($exception->getCode() !== '23505') {
+            $stillConfirmed = $report->confirmations()
+                ->where('user_id', $request->user()->id)
+                ->exists();
+
+            if (! $stillConfirmed) {
                 throw $exception;
             }
 
-            abort(422, 'You have already confirmed this report.');
+            throw ValidationException::withMessages([
+                'confirmation' => ['You have already confirmed this report.'],
+            ]);
         }
 
         $confirmationsCount = $report->confirmations()->count();

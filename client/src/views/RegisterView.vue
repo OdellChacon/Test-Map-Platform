@@ -1,5 +1,5 @@
 <script setup>
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
@@ -8,17 +8,39 @@ const authStore = useAuthStore()
 
 const form = reactive({ name: '', email: '', password: '', password_confirmation: '' })
 const errors = ref({})
+const generalError = ref('')
 const isSubmitting = ref(false)
+
+// Laravel's `confirmed` rule reports a mismatched confirmation under the
+// `password` key. Split that out so it renders next to `password_confirmation`
+// instead of only under `password`, and avoid showing the exact same text
+// under both fields when `password` has more than one error.
+const confirmationError = computed(() => {
+  const list = errors.value.password
+  if (!list || list.length === 0) return null
+  return list.find((message) => message.toLowerCase().includes('confirm')) ?? null
+})
+
+const passwordError = computed(() => {
+  const list = errors.value.password
+  if (!list || list.length === 0) return null
+  return list.find((message) => message !== confirmationError.value) ?? null
+})
 
 async function handleSubmit() {
   errors.value = {}
+  generalError.value = ''
   isSubmitting.value = true
 
   try {
     await authStore.register(form)
     router.push('/reports')
   } catch (error) {
-    errors.value = error.response?.data?.errors ?? { name: ['Unable to register.'] }
+    if (error.response) {
+      errors.value = error.response.data?.errors ?? {}
+    } else {
+      generalError.value = 'Unable to register. Please check your connection and try again.'
+    }
   } finally {
     isSubmitting.value = false
   }
@@ -29,6 +51,7 @@ async function handleSubmit() {
   <div class="page">
     <div class="card" style="max-width: 420px; margin: 0 auto">
       <h2>Create an account</h2>
+      <p v-if="generalError" class="field-error">{{ generalError }}</p>
       <form class="stack" style="margin-top: 1rem" @submit.prevent="handleSubmit">
         <div class="field">
           <label for="name">Name</label>
@@ -49,9 +72,10 @@ async function handleSubmit() {
             v-model="form.password"
             type="password"
             required
+            minlength="8"
             autocomplete="new-password"
           />
-          <span v-if="errors.password" class="field-error">{{ errors.password[0] }}</span>
+          <span v-if="passwordError" class="field-error">{{ passwordError }}</span>
         </div>
 
         <div class="field">
@@ -63,6 +87,7 @@ async function handleSubmit() {
             required
             autocomplete="new-password"
           />
+          <span v-if="confirmationError" class="field-error">{{ confirmationError }}</span>
         </div>
 
         <button type="submit" class="btn btn-primary" :disabled="isSubmitting">
