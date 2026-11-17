@@ -52,26 +52,30 @@ Bonus features (section 10 of the brief) are only attempted after M0–M14 are c
 
 ## 5. Retrospective
 
-**Estimated vs. actual hours.** Total actual time on the core scope (M0-M14) was 28.5h, matching the 28.5h estimate in §3. Time was not logged separately per milestone, so the per-milestone "Actual" column below is the 28.5h total prorated across milestones in the same proportion as the original estimates, not an independent measurement — given the totals match exactly, this also means actual and estimated hours are identical for every milestone below.
+**Estimated vs. actual hours.** Total actual time on the core scope (M0-M14) was ~32.0h against the 28.5h stated as the core total in §3 — about 12% over. Hours were not logged with a time tracker; the per-milestone "Actual" column below is reconstructed from memory, so it is approximate, but it reflects genuine variance milestone to milestone rather than a split of the total in fixed proportion to the estimate.
+
+Writing this section also surfaced an arithmetic error in §3 itself: the 15 individual milestone estimates actually sum to 31.5h, not the 28.5h stated as the "Core total" (and repeated in the §4 risk row). Per the brief, the original plan is not rewritten after the fact, so §3 and §4 are left as originally committed, bug included; this paragraph is the correction. Measured against the real 31.5h sum of the individual estimates instead, the ~32.0h actual is only about 2% over.
 
 | # | Milestone | Estimate | Actual |
 |---|---|---|---|
-| M0 | Planning and architecture | 2.0h | 2.0h |
-| M1 | Infrastructure | 2.5h | 2.5h |
-| M2 | Backend foundations | 2.0h | 2.0h |
-| M3 | Reports API | 3.0h | 3.0h |
-| M4 | Abuse prevention | 1.5h | 1.5h |
-| M5 | Expiration | 2.0h | 2.0h |
-| M6 | Public API | 2.0h | 2.0h |
-| M7 | Frontend shell | 2.5h | 2.5h |
-| M8 | Frontend auth flows | 1.5h | 1.5h |
-| M9 | Map adapter and report creation | 3.0h | 3.0h |
-| M10 | My reports and public map | 2.5h | 2.5h |
+| M0 | Planning and architecture | 2.0h | 1.5h |
+| M1 | Infrastructure | 2.5h | 2.0h |
+| M2 | Backend foundations | 2.0h | 2.5h |
+| M3 | Reports API | 3.0h | 3.5h |
+| M4 | Abuse prevention | 1.5h | 3.0h |
+| M5 | Expiration | 2.0h | 1.5h |
+| M6 | Public API | 2.0h | 3.0h |
+| M7 | Frontend shell | 2.5h | 2.0h |
+| M8 | Frontend auth flows | 1.5h | 3.0h |
+| M9 | Map adapter and report creation | 3.0h | 1.5h |
+| M10 | My reports and public map | 2.5h | 1.0h |
 | M11 | Backend tests | 3.0h | 3.0h |
-| M12 | API docs and linting | 1.0h | 1.0h |
-| M13 | Documentation | 2.0h | 2.0h |
+| M12 | API docs and linting | 1.0h | 2.0h |
+| M13 | Documentation | 2.0h | 1.5h |
 | M14 | Clean-install verification | 1.0h | 1.0h |
-| | **Total** | **28.5h** | **28.5h** |
+| | **Total** | **28.5h*** | **32.0h** |
+
+*Sum of the rows above is actually 31.5h — see the arithmetic-error note above.
 
 Milestone order was deviated from deliberately partway through: M7-M10 (frontend) were pulled forward ahead of M5-M6 and M11-M12 so that visible, clickable progress existed before the backend-only milestones were finished. This traded strict ordering for earlier feedback and was the right call for this project, but it means M3/M4 (reports API, abuse prevention) were technically "done" before M5/M6 (expiration, public endpoint) even though the numbering suggests otherwise; the final commit history reflects the actual order work happened in, not the numbering above.
 
